@@ -18,3 +18,91 @@
 @media(max-width:1100px){.header-main{grid-template-columns:190px 1fr auto}.brand img{width:175px}.product-grid{grid-template-columns:repeat(3,1fr)}.trust-grid{grid-template-columns:repeat(3,1fr)}.footer-grid{grid-template-columns:2fr 1fr 1fr}.about-grid{grid-template-columns:1fr}}
 @media(max-width:700px){.container{width:calc(100% - 24px)}.topbar{height:32px;font-size:9px}.topbar .top-trust,.topbar .socials{display:none}.header-main{min-height:110px;grid-template-columns:1fr auto;grid-template-rows:54px 46px;gap:6px}.brand img{width:150px;height:52px;margin-top:8px}.search{grid-column:1/-1;grid-row:2;height:44px}.search-suggestions{top:calc(100% + 6px);left:0;right:0}.cart{height:42px;padding:0 13px;font-size:11px}.nav-inner{padding:7px 0}.nav a,.category-nav>button{padding:9px 13px;font-size:11px}.category-menu{position:fixed;top:118px;left:12px;width:calc(100vw - 24px);grid-template-columns:1fr 1fr}.hero{min-height:500px}.hero-bg{background-image:linear-gradient(90deg,rgba(3,16,33,.46) 0%,rgba(4,25,50,.28) 48%,rgba(1,10,24,.42) 100%),linear-gradient(180deg,rgba(0,12,28,.08),rgba(0,7,18,.25)),url("hero-tech.webp");background-position:62% center}.hero-content{min-height:500px;align-items:flex-start}.hero-copy{padding-top:48px}.hero h1{font-size:42px;letter-spacing:-2px}.hero-sub{font-size:17px}.hero-copy p{font-size:12px;max-width:88%}.hero-slogan{display:none}.section{padding:38px 0}.section-head h2{font-size:23px}.trust-grid{grid-template-columns:1fr 1fr}.trust-item{min-height:66px;padding:8px 11px}.trust-icon{font-size:21px}.trust-item strong{font-size:10px}.trust-item small{font-size:8px}.category-grid{grid-template-columns:1fr;gap:8px}.category-pill{min-height:56px}.product-grid{grid-template-columns:repeat(2,1fr);gap:10px}.product-visual{height:165px;padding:11px}.product-body{padding:10px}.product-card h3{font-size:12px}.product-price{font-size:15px}.quick-add{padding:6px 8px}.about-grid h2{font-size:32px}.about-points{grid-template-columns:1fr}.cta-inner{display:block}.cta .btn{width:100%;margin-top:16px}.footer-grid{grid-template-columns:1fr 1fr;gap:25px}.footer-grid>div:first-child{grid-column:1/-1}.copyright{display:block}.copyright span{display:block;margin-top:6px}.catalog-hero h1{font-size:34px}.catalog-tools{grid-template-columns:1fr}.modal-product{grid-template-columns:1fr}.modal-product-image{min-height:220px}.modal-product-image img{height:200px}.modal-product-info{padding:23px 18px}.modal-product-info h2{font-size:23px}.modal-actions{flex-direction:column}.product-meta{grid-template-columns:1fr 1fr}}
 @media(max-width:390px){.brand img{width:135px}.hero h1{font-size:37px}.product-visual{height:150px}}
+
+/* FLASH GEAR BD — product-card overlap fix */
+.product-card,
+.product-item,
+.product-tile {
+  position: relative;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.product-card .product-image,
+.product-card .product-img,
+.product-card .image-wrap,
+.product-card .product-media,
+.product-item .product-image,
+.product-item .product-img,
+.product-tile .product-image {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 180px;
+  min-height: 180px;
+  max-height: 180px;
+  overflow: hidden;
+  flex: 0 0 180px;
+}
+
+.product-card .product-image img,
+.product-card .product-img img,
+.product-card .image-wrap img,
+.product-card .product-media img,
+.product-item .product-image img,
+.product-item .product-img img,
+.product-tile .product-image img {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.product-card .product-info,
+.product-card .product-details,
+.product-card .product-content,
+.product-item .product-info,
+.product-item .product-details,
+.product-tile .product-info {
+  position: relative;
+  z-index: 2;
+  display: block;
+  min-width: 0;
+  background: inherit;
+  overflow: visible;
+  padding-top: 10px;
+}
+
+.product-card .product-name,
+.product-card .product-title,
+.product-item .product-name,
+.product-item .product-title,
+.product-tile .product-name,
+.product-tile .product-title {
+  position: relative;
+  z-index: 3;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  min-height: 2.5em;
+  line-height: 1.25;
+  word-break: break-word;
+}
+
+@media (max-width: 600px) {
+  .product-card .product-image,
+  .product-card .product-img,
+  .product-card .image-wrap,
+  .product-card .product-media,
+  .product-item .product-image,
+  .product-item .product-img,
+  .product-tile .product-image {
+    height: 150px;
+    min-height: 150px;
+    max-height: 150px;
+    flex-basis: 150px;
+  }
+}
