@@ -1,5 +1,29 @@
-# FLASH GEAR BD — Final Light/Blue Premium Version
+# FLASH GEAR BD — Mobile Product Manager Update
 
-Google Sheets-powered mobile/gadgets storefront with a premium blue/dark hero, featured products first, category menu, smart search suggestions, product details, editable cart quantities, remove controls, WhatsApp ordering, warranty/delivery/contact pages, and mobile-first responsive UI.
+This version adds a phone-friendly Product Manager to the existing Google Sheets product system.
 
-Upload the files in this folder to the root of the existing GitHub repository used by the Cloudflare Worker.
+## What it does
+- Open the Apps Script Web App with `?admin=1`.
+- Add a product from an Android phone.
+- Choose a product image directly from the phone gallery/camera.
+- The browser resizes the image to a web-friendly maximum of 1400px and WebP quality.
+- The image is saved into a Google Drive folder named `FLASH GEAR BD Product Images`.
+- The returned image URL is automatically written into the `Image URL` column.
+- Product information is automatically appended to the `Products` sheet.
+- Category, warranty, description, featured and active status are included.
+
+## One-time setup
+1. Open your existing Apps Script project attached to the Products spreadsheet.
+2. Replace the old `google-apps-script.gs` code with the new code in this package.
+3. Add a new Apps Script HTML file named exactly `product-manager` and paste the contents of `product-manager.html`.
+4. Change `ADMIN_PIN = '2580'` in the script to your own private PIN.
+5. Deploy the Web App again as the same deployment: Execute as **Me**, Who has access **Anyone**.
+6. Open your existing `/exec` URL followed by `?admin=1` to open the mobile Product Manager.
+
+The normal `/exec` URL still returns the JSON API for the website.
+
+## Sheet columns
+Product ID, Product Name, Category, Brand, Price, MRP, Stock, Warranty, Image URL, Description, Featured, Active
+
+## Important
+The Product Manager is protected by the PIN in Apps Script. Keep the manager URL and PIN private. Google Drive sharing is set to Anyone with the link so the public website can display uploaded product images.
