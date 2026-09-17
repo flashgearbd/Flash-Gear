@@ -349,3 +349,53 @@ button:active, [role="button"]:active, .clickable:active,
   white-space:nowrap !important;
 }
 .search .search-suggestions .suggest-thumb{flex:0 0 42px !important;}
+
+/* ===== FINAL POLISH: natural hero top blend + transparent add-to-cart ===== */
+.hero { background: var(--bg) !important; }
+.hero-bg {
+  z-index: 0 !important;
+  -webkit-mask-image: linear-gradient(to bottom,
+    transparent 0%,
+    rgba(0,0,0,.18) 3%,
+    rgba(0,0,0,.62) 7%,
+    #000 13%,
+    #000 88%,
+    rgba(0,0,0,.78) 94%,
+    rgba(0,0,0,.25) 98%,
+    transparent 100%);
+  mask-image: linear-gradient(to bottom,
+    transparent 0%,
+    rgba(0,0,0,.18) 3%,
+    rgba(0,0,0,.62) 7%,
+    #000 13%,
+    #000 88%,
+    rgba(0,0,0,.78) 94%,
+    rgba(0,0,0,.25) 98%,
+    transparent 100%);
+}
+.hero::before {
+  height: 82px !important;
+  opacity: 1 !important;
+  background: linear-gradient(180deg,
+    var(--bg) 0%,
+    rgba(243,241,236,.92) 30%,
+    rgba(243,241,236,.52) 62%,
+    rgba(243,241,236,0) 100%) !important;
+}
+/* Keep the product modal open after Add to Cart; only show a small confirmation. */
+.fg-cart-toast {
+  position: fixed; left: 50%; bottom: 24px; z-index: 12000;
+  display: flex; align-items: center; gap: 10px;
+  min-width: 210px; max-width: calc(100vw - 28px);
+  padding: 11px 14px; border: 1px solid #cfe3f1;
+  border-radius: 18px; background: rgba(255,255,255,.96);
+  box-shadow: 0 16px 40px rgba(13,65,112,.18);
+  transform: translate(-50%, 18px) scale(.96); opacity: 0; pointer-events: none;
+  transition: transform 220ms cubic-bezier(.22,1,.36,1), opacity 180ms ease;
+  backdrop-filter: blur(14px);
+}
+.fg-cart-toast.show { transform: translate(-50%,0) scale(1); opacity: 1; }
+.fg-cart-toast > span { width: 28px; height: 28px; display:grid; place-items:center; border-radius:50%; background:#e9f7ff; color:#087fdf; font-weight:900; }
+.fg-cart-toast strong { display:block; font-size:12px; color:var(--ink); }
+.fg-cart-toast small { display:block; margin-top:2px; max-width:155px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--muted); font-size:10px; }
+@media (max-width:600px){ .fg-cart-toast{bottom:16px;} }

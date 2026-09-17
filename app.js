@@ -41,7 +41,14 @@ function waCart(items){const lines=items.map(i=>`• ${i.name} × ${i.qty} — $
 
 function getCart(){try{return JSON.parse(localStorage.getItem("fg_cart")||"[]")}catch{return []}}
 function saveCart(c){localStorage.setItem("fg_cart",JSON.stringify(c));updateCartUI()}
-function addToCart(p){const c=getCart(),x=c.find(i=>i.id===p.id);if(x)x.qty++;else c.push({id:p.id,name:p.name,price:Number(p.price||0),qty:1});saveCart(c);openCart()}
+function addToCart(p){const c=getCart(),x=c.find(i=>i.id===p.id);if(x)x.qty++;else c.push({id:p.id,name:p.name,price:Number(p.price||0),qty:1});saveCart(c);showCartAddedToast(p)}
+function showCartAddedToast(p){
+  let t=document.querySelector("#fgCartToast");
+  if(!t){document.body.insertAdjacentHTML("beforeend",`<div id="fgCartToast" class="fg-cart-toast" role="status" aria-live="polite"><span>✓</span><div><strong>Added to cart</strong><small></small></div></div>`);t=document.querySelector("#fgCartToast");}
+  const small=t.querySelector("small"); if(small) small.textContent=p?.name||"Product";
+  t.classList.remove("show"); void t.offsetWidth; t.classList.add("show");
+  clearTimeout(window.FG_CART_TOAST_TIMER); window.FG_CART_TOAST_TIMER=setTimeout(()=>t.classList.remove("show"),1800);
+}
 function removeFromCart(id){saveCart(getCart().filter(i=>i.id!==id));openCart()}
 function changeQty(id,d){const c=getCart(),x=c.find(i=>i.id===id);if(!x)return;x.qty+=d;if(x.qty<=0)return removeFromCart(id);saveCart(c);openCart()}
 function updateCartUI(){
@@ -97,7 +104,7 @@ async function loadProductsFast(onData){
 }
 
 function closeSearchSuggestions(except=null){
-  document.querySelectorAll('.search-suggestions').forEach(box=>{if(box!==except)box.remove()});
+  document.querySelectorAll('.search-suggestions').forEach(box=>{if(box!==except){box.hidden=true;box.innerHTML='';}});
 }
 function setupSearchSuggestions(products){
   // Bind once. Always read the latest product list so suggestions work after
@@ -105,7 +112,7 @@ function setupSearchSuggestions(products){
   if(window.FG_SEARCH_SUGGESTIONS_READY)return;
   window.FG_SEARCH_SUGGESTIONS_READY=true;
 
-  const getProducts=()=>Array.isArray(window.FG_PRODUCTS)?window.FG_PRODUCTS:(products||[]);
+  const getProducts=()=>Array.isArray(window.FG_PRODUCTS)?window.FG_PRODUCTS:(Array.isArray(products)?products:[]);
   const sources=[];
   document.querySelectorAll('.search').forEach(form=>{
     const input=form.querySelector('input[name="q"]');
@@ -146,7 +153,8 @@ function setupSearchSuggestions(products){
       box.hidden=false;
     };
 
-    input.addEventListener('input',render);
+    input.addEventListener('input',()=>{render(); clearTimeout(input._fgSuggestTimer); input._fgSuggestTimer=setTimeout(render,80);});
+    input.addEventListener('compositionend',render);
     input.addEventListener('focus',()=>{if(input.value.trim())render()});
     input.addEventListener('keydown',e=>{if(e.key==='Escape'){box.hidden=true;box.innerHTML='';}});
     if(input.form) input.form.addEventListener('submit',()=>closeSearchSuggestions());
@@ -167,7 +175,7 @@ function setupSearchSuggestions(products){
       setTimeout(()=>{
         if(document.activeElement && typeof document.activeElement.blur === "function") document.activeElement.blur();
         showProduct(p);
-      },0);
+      },80);
     });
   });
 
