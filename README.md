@@ -23,3 +23,9 @@ Feature Phone, Mobile Phones, Adapter & Cable, Charger, Earbud, Headphone, Neckb
 
 ## Google Sheets
 The existing Apps Script URL is already configured in `app.js`. Continue managing products from the `Products` sheet. Use `Active = Yes` to publish a product and `Featured = Yes` to place it in Featured Products.
+
+## Latest refinements
+- Darker premium blue hero overlay while retaining a light blue/white interface
+- Live search suggestions showing up to 5 matching products as the customer types
+- Suggestions match product name, brand, category and description
+- Selecting a suggestion opens the product details or takes the customer to its catalog result
