@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://flashgearbd.flashgearbd.workers.dev/sitemap.xml
