@@ -1,37 +1,81 @@
-const CONFIG={
-  whatsappNumber:"8801601093553",
-  facebook:"https://www.facebook.com/share/1HyzxwuCR8/",
-  instagram:"https://www.instagram.com/flashgearbd/",
-  tiktok:"#",
-  youtube:"#",
-  products:[
-    {name:"65W Fast Charger",category:"Chargers",price:1290,icon:"⚡",featured:true},
-    {name:"TWS Wireless Earbuds",category:"Audio",price:1490,icon:"🎧",featured:true},
-    {name:"10,000mAh Power Bank",category:"Power",price:1790,icon:"🔋",featured:true},
-    {name:"Premium Phone Case",category:"Protection",price:450,icon:"🛡️",featured:true},
-    {name:"Type-C Fast Charging Cable",category:"Accessories",price:350,icon:"🔌"},
-    {name:"Wireless Neckband",category:"Audio",price:990,icon:"🎵"},
-    {name:"Magnetic Phone Holder",category:"Gadgets",price:690,icon:"✨"},
-    {name:"USB-C to USB-C Cable",category:"Chargers",price:490,icon:"🔗"}
-  ]
+const CONFIG = {
+  productsApiUrl: "https://script.google.com/macros/s/AKfycbzgXkfRQxkfDj8N6h1JM9NbmGWirseH1aPHyJ_jeuWPkmPw4CFiEcGZws_hqYbunRdedA/exec",
+  whatsappNumber: "8801601093553",
+  facebook: "https://www.facebook.com/share/1HyzxwuCR8/",
+  instagram: "https://www.instagram.com/flashgearbd/",
+  fallbackProducts: []
 };
-const money=n=>"৳"+Number(n).toLocaleString("en-BD");
-const wa=name=>`https://wa.me/${CONFIG.whatsappNumber}?text=${encodeURIComponent(name?`Hello FLASH GEAR BD, I want to order: ${name}`:`Hello FLASH GEAR BD, I want to know about your products.`)}`;
-function card(p){return `<article class="product"><div class="product-img">${p.icon}</div><div class="product-body"><span class="tag">${p.category}</span><h3>${p.name}</h3><div class="price">${money(p.price)}</div><a class="order" target="_blank" rel="noopener" href="${wa(p.name)}">Order on WhatsApp →</a></div></article>`}
-function render(list,id){const e=document.querySelector(id);if(e)e.innerHTML=list.map(card).join("")}
-document.addEventListener("DOMContentLoaded",()=>{
-document.querySelectorAll(".wa-link").forEach(a=>{a.href=wa();a.target="_blank";a.rel="noopener"});
-document.querySelectorAll("[data-facebook]").forEach(a=>a.href=CONFIG.facebook);
-document.querySelectorAll("[data-instagram]").forEach(a=>a.href=CONFIG.instagram);
-document.querySelectorAll("[data-tiktok]").forEach(a=>a.href=CONFIG.tiktok);
-document.querySelectorAll("[data-youtube]").forEach(a=>a.href=CONFIG.youtube);
-document.querySelectorAll("#year").forEach(e=>e.textContent=new Date().getFullYear());
-if(document.querySelector("#featured"))render(CONFIG.products.filter(p=>p.featured),"#featured");
-const catalog=document.querySelector("#catalog");
-if(catalog){
- const s=document.querySelector("#catalogSearch"),c=document.querySelector("#category");
- const params=new URLSearchParams(location.search); const q0=params.get("q"),cat0=params.get("cat");
- if(q0)s.value=q0;if(cat0 && [...c.options].some(o=>o.value===cat0))c.value=cat0;
- function filter(){const q=s.value.toLowerCase(),cat=c.value;const list=CONFIG.products.filter(p=>(cat==="All"||p.category===cat)&&(!q||p.name.toLowerCase().includes(q)||p.category.toLowerCase().includes(q)));render(list,"#catalog");document.querySelector("#empty").hidden=!!list.length}
- s.addEventListener("input",filter);c.addEventListener("change",filter);filter();
-}});
+
+const money = n => "৳" + Number(n || 0).toLocaleString("en-BD");
+const wa = name => `https://wa.me/${CONFIG.whatsappNumber}?text=${encodeURIComponent(name ? `Hello FLASH GEAR BD, I want to order: ${name}` : `Hello FLASH GEAR BD, I want to know about your products.`)}`;
+
+function card(p) {
+  const image = p.image ? `<img src="${escapeHtml(p.image)}" alt="${escapeHtml(p.name)}" loading="lazy">` : `<span class="product-placeholder">${iconFor(p.category)}</span>`;
+  const mrp = Number(p.mrp || 0);
+  const price = Number(p.price || 0);
+  return `<article class="product"><div class="product-img">${image}</div><div class="product-body"><span class="tag">${escapeHtml(p.category || "Gadgets")}</span><h3>${escapeHtml(p.name || "Product")}</h3>${p.brand ? `<small>${escapeHtml(p.brand)}</small>` : ""}<div class="price">${money(price)}${mrp > price ? ` <del>${money(mrp)}</del>` : ""}</div><div class="stock">${escapeHtml(p.stock || "In Stock")}</div><a class="order" target="_blank" rel="noopener" href="${wa(p.name)}">Order on WhatsApp →</a></div></article>`;
+}
+
+function iconFor(category) {
+  const map = { Mobile:"📱", Accessories:"🔌", Chargers:"⚡", Audio:"🎧", Protection:"🛡️", Power:"🔋", Gadgets:"✨", Others:"📦" };
+  return map[category] || "📦";
+}
+
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>'"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;","\"":"&quot;"}[c]));
+}
+
+function render(list, id) {
+  const el = document.querySelector(id);
+  if (el) el.innerHTML = list.map(card).join("");
+}
+
+async function loadProducts() {
+  if (!CONFIG.productsApiUrl || CONFIG.productsApiUrl.includes("PASTE_")) return CONFIG.fallbackProducts;
+  try {
+    const response = await fetch(CONFIG.productsApiUrl, { cache: "no-store" });
+    if (!response.ok) throw new Error(`API ${response.status}`);
+    const data = await response.json();
+    if (!Array.isArray(data)) throw new Error("Invalid product data");
+    return data;
+  } catch (error) {
+    console.warn("FLASH GEAR BD product API unavailable:", error);
+    return CONFIG.fallbackProducts;
+  }
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
+  document.querySelectorAll(".wa-link").forEach(a => { a.href = wa(); a.target = "_blank"; a.rel = "noopener"; });
+  document.querySelectorAll("[data-facebook]").forEach(a => a.href = CONFIG.facebook);
+  document.querySelectorAll("[data-instagram]").forEach(a => a.href = CONFIG.instagram);
+  document.querySelectorAll("#year").forEach(e => e.textContent = new Date().getFullYear());
+
+  const products = await loadProducts();
+
+  if (document.querySelector("#featured")) {
+    const featured = products.filter(p => p.featured);
+    render((featured.length ? featured : products).slice(0, 8), "#featured");
+  }
+
+  const catalog = document.querySelector("#catalog");
+  if (catalog) {
+    const s = document.querySelector("#catalogSearch");
+    const c = document.querySelector("#category");
+    const params = new URLSearchParams(location.search);
+    const q0 = params.get("q"), cat0 = params.get("cat");
+    if (s && q0) s.value = q0;
+    if (c && cat0 && [...c.options].some(o => o.value === cat0)) c.value = cat0;
+
+    function filter() {
+      const q = (s?.value || "").toLowerCase().trim();
+      const cat = c?.value || "All";
+      const list = products.filter(p => (cat === "All" || p.category === cat) && (!q || [p.name,p.category,p.brand,p.description].join(" ").toLowerCase().includes(q)));
+      render(list, "#catalog");
+      const empty = document.querySelector("#empty");
+      if (empty) empty.hidden = !!list.length;
+    }
+    s?.addEventListener("input", filter);
+    c?.addEventListener("change", filter);
+    filter();
+  }
+});
