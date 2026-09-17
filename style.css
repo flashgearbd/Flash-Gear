@@ -7,3 +7,72 @@
 footer{background:#02060c;border-top:1px solid #12243a;padding:45px 0 18px}.footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr;gap:50px}.footer-logo{width:230px;height:70px;object-fit:contain;object-position:left}.footer-grid p,.footer-grid a{color:#8ea3b8;font-size:13px}.footer-grid a{display:block;margin:7px 0}.footer-grid h4{margin:0 0 10px}.copyright{border-top:1px solid #12243a;margin-top:30px;padding-top:15px;color:#64788c;font-size:11px}
 @media(max-width:1000px){.top-trust,.account{display:none}.header-main{gap:15px}.brand{width:220px}.brand img{width:210px;height:75px}.hero-art{right:-70px;opacity:.55}.category-grid{grid-template-columns:repeat(4,1fr)}.trust-grid{grid-template-columns:repeat(3,1fr)}.trust-grid>div:nth-child(n+4){display:none}.product-grid{grid-template-columns:repeat(2,1fr)}.nav-inner{grid-template-columns:repeat(5,1fr)}.nav a:nth-child(n+6){display:none}}
 @media(max-width:650px){.topbar{height:auto;padding:7px 0}.socials{display:none}.header-main{min-height:78px;flex-wrap:wrap;padding:6px 0}.brand{width:155px}.brand img{width:150px;height:58px}.search{order:3;max-width:none;flex-basis:100%}.cart{margin-left:auto}.nav-inner{display:flex;overflow:auto;justify-content:flex-start}.nav a{min-width:max-content;padding:0 15px}.hero{min-height:510px}.hero-content{min-height:510px;align-items:flex-start}.hero-copy{padding-top:60px}.hero h1{font-size:46px}.hero-sub{font-size:18px}.hero-slogan{position:absolute;right:15px;bottom:40px;font-size:27px}.hero-art{right:-170px;top:90px;opacity:.45}.trust-grid{grid-template-columns:repeat(2,1fr)}.trust-grid>div{border-bottom:1px solid #16283c}.category-grid{grid-template-columns:repeat(2,1fr)}.product-grid{grid-template-columns:1fr}.feature-row,.contact-grid,.footer-grid{grid-template-columns:1fr}.mini-features{grid-template-columns:1fr}.cta-inner{display:block}.cta .btn{margin-top:18px;width:100%}.section{padding:42px 0}.section-title h2{font-size:24px}.page-hero h1{font-size:42px}}
+
+
+/* Final mobile polish for FLASH GEAR BD */
+html,body{width:100%;max-width:100%;overflow-x:hidden}
+.brand img{display:block}
+.facebook-footer-link{display:inline-block;margin:18px auto 0;color:#1aa5ff;font-weight:800;font-size:13px}
+@media(max-width:650px){
+  .container{width:calc(100% - 28px);max-width:none}
+  .topbar{height:34px;padding:0;font-size:11px}
+  .topbar-inner{justify-content:flex-start;overflow:hidden;white-space:nowrap}
+  .top-trust,.socials{display:none}
+  .header-main{min-height:136px;padding:8px 0 12px;display:grid;grid-template-columns:1fr auto;grid-template-rows:58px 48px;gap:8px 12px}
+  .brand{width:auto;min-width:0}
+  .brand img{width:142px;height:58px;object-fit:contain;object-position:left center}
+  .cart{font-size:14px;align-self:center}
+  .cart i{right:-8px}
+  .search{grid-column:1/-1;grid-row:2;width:100%;height:48px;margin:0;max-width:none}
+  .search input{font-size:14px;padding:0 15px;min-width:0}
+  .search button{width:54px;font-size:25px}
+  .nav{overflow:hidden}
+  .nav-inner{display:flex;overflow-x:auto;overflow-y:hidden;justify-content:flex-start;width:100%;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .nav-inner::-webkit-scrollbar{display:none}
+  .nav a{flex:0 0 auto;min-width:max-content;height:54px;padding:0 17px;font-size:13px}
+  .hero{min-height:510px}
+  .hero-content{min-height:510px;display:block}
+  .hero-copy{padding:58px 0 30px;max-width:100%}
+  .eyebrow{font-size:11px;letter-spacing:2.5px}
+  .hero h1{font-size:42px;letter-spacing:-2px;margin:10px 0 16px}
+  .hero-sub{font-size:18px;margin-bottom:16px}
+  .hero-copy p{font-size:15px;line-height:1.7;max-width:95%}
+  .btn{padding:13px 18px;font-size:14px}
+  .hero-art{right:-245px;top:95px;width:560px;height:430px;opacity:.34}
+  .hero-slogan{right:10px;bottom:24px;font-size:24px;z-index:3}
+  .slider-dots{bottom:10px}
+  .trust-grid{grid-template-columns:1fr 1fr}
+  .trust-grid>div{min-height:98px;padding:12px 12px;grid-template-columns:38px 1fr}
+  .trust-grid b{font-size:24px}
+  .trust-grid strong{font-size:12px}
+  .trust-grid small{font-size:10px}
+  .section{padding:36px 0}
+  .section-title{align-items:center;gap:10px}
+  .section-title h2{font-size:22px;padding-left:10px}
+  .section-title a{font-size:11px;white-space:nowrap}
+  .category-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .cat{min-height:122px;padding:10px}
+  .cat-art{height:68px;font-size:44px}
+  .cat strong{font-size:12px}
+  .product-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .product-img{height:135px;font-size:58px}
+  .product-body{padding:11px}
+  .product h3{font-size:13px}
+  .price{font-size:16px;margin:6px 0 10px}
+  .order{font-size:10px;padding:9px 5px}
+  .feature-row{gap:28px}
+  .feature-row h2{font-size:32px}
+  .mini-features{grid-template-columns:1fr;gap:16px}
+  .cta{padding:38px 0}
+  .cta h2{font-size:30px}
+  .footer-grid{gap:28px}
+  .footer-logo{width:180px;height:58px}
+  .facebook-footer-link{margin-top:8px}
+}
+@media(max-width:380px){
+  .brand img{width:128px}
+  .nav a{padding:0 14px;font-size:12px}
+  .hero h1{font-size:37px}
+  .hero-sub{font-size:17px}
+  .hero-copy p{font-size:14px}
+}

@@ -1,6 +1,6 @@
 const CONFIG={
   whatsappNumber:"8801601093553",
-  facebook:"https://www.facebook.com/flashgearbd",
+  facebook:"https://www.facebook.com/share/1HyzxwuCR8/",
   instagram:"https://www.instagram.com/flashgearbd/",
   tiktok:"#",
   youtube:"#",

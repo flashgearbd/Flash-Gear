@@ -14,3 +14,6 @@ Edit `assets/app.js` and replace `8801XXXXXXXXX` with the real FLASH GEAR BD Wha
 
 ## GitHub / Cloudflare
 Upload the contents of this ZIP to the root of the GitHub repository. Keep `index.html` at the repository root and keep the `assets` folder beside it. The `wrangler.jsonc` file is also at the root.
+
+Facebook Page: https://www.facebook.com/share/1HyzxwuCR8/
+Mobile layout polished for Android screens.
