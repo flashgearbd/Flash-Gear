@@ -17,3 +17,5 @@ Upload the contents of this ZIP to the root of the GitHub repository. Keep `inde
 
 Facebook Page: https://www.facebook.com/share/1HyzxwuCR8/
 Mobile layout polished for Android screens.
+
+Final mobile polish applied: compact header, swipe navigation, shorter hero, four benefit cards, responsive categories.
