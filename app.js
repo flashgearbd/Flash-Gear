@@ -1,3 +1,16 @@
+
+/* FLASH GEAR BD — fluid interaction helpers */
+(function(){
+  document.addEventListener('click', function(e){
+    const target = e.target.closest('button, a, [role="button"], .clickable');
+    if (!target) return;
+    target.classList.remove('fgbd-click-pop');
+    void target.offsetWidth;
+    target.classList.add('fgbd-click-pop');
+    setTimeout(() => target.classList.remove('fgbd-click-pop'), 260);
+  }, {passive:true});
+})();
+
 const CONFIG = {
   productsApiUrl: "https://script.google.com/macros/s/AKfycbyRvlz1Dhm6vyQHk554YZ_8k-jfkpPgbmtSuh2WqWuKRScDI49yWVt1E6xYMWNKlSg9/exec",
   whatsappNumber: "8801601093553",
