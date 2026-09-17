@@ -161,7 +161,13 @@ function setupSearchSuggestions(products){
       closeSearchSuggestions();
       if(!p)return;
       input.value=p.name||'';
-      showProduct(p);
+      // Hide the mobile/Android keyboard before opening Product Info.
+      input.blur();
+      if(document.activeElement && typeof document.activeElement.blur === "function") document.activeElement.blur();
+      setTimeout(()=>{
+        if(document.activeElement && typeof document.activeElement.blur === "function") document.activeElement.blur();
+        showProduct(p);
+      },0);
     });
   });
 

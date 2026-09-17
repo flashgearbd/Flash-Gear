@@ -1,11 +1,17 @@
-FLASH GEAR BD — PRODUCT TEXT OVERLAP FIX
+FLASH GEAR BD — FINAL SEARCH + HERO FIX
 
 Replace the website files in your GitHub repository with these files.
 
-Important:
-- This fixes product images overlapping product names/details.
-- The image stays in its own fixed area.
-- Product names such as "Anker Zolo" remain fully visible.
-- The Google Sheets product API URL and Google Drive image conversion from the latest build are preserved.
+SEARCH:
+- Suggestions work from every page.
+- Suggestion text is visible and clickable.
+- Search matches product name, brand, category and description.
+- Clicking a suggestion opens that exact Product Info directly.
+- Mobile/Android keyboard is blurred/hidden before Product Info opens.
+- Enter/Search still performs a direct product search.
 
-After committing to GitHub, wait for Cloudflare Workers deployment, then refresh the website.
+HERO:
+- Upper hero edge blends smoothly into the off-white page background.
+- Lower hero blend is preserved.
+
+No Google Apps Script changes are required.
