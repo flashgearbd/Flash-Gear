@@ -253,3 +253,16 @@ button:active, [role="button"]:active, .clickable:active,
   45% { transform: scale(.965); }
   100% { transform: scale(1); }
 }
+
+
+/* FLASH GEAR BD — seamless hero/background blend */
+.hero{isolation:isolate;background:var(--bg);}
+.hero::before,
+.hero::after{content:"";position:absolute;left:0;right:0;z-index:1;pointer-events:none;}
+.hero::before{top:0;height:34px;background:linear-gradient(180deg,var(--bg),rgba(243,241,236,0));opacity:.7;}
+.hero::after{bottom:0;height:78px;background:linear-gradient(180deg,rgba(243,241,236,0),var(--bg));}
+.hero-bg{z-index:0;}
+.hero-content{z-index:2;}
+/* Suggestions also work on the catalog search field */
+.catalog-tools{position:relative;}
+.catalog-tools .search-suggestions{top:56px;left:0;right:auto;width:min(560px,calc(100vw - 24px));z-index:600;}

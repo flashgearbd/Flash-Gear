@@ -100,20 +100,29 @@ function closeSearchSuggestions(except=null){
   document.querySelectorAll('.search-suggestions').forEach(box=>{if(box!==except)box.remove()});
 }
 function setupSearchSuggestions(products){
+  const sources=[];
   document.querySelectorAll('.search').forEach(form=>{
-    if(form.dataset.suggestReady==='1') return;
-    form.dataset.suggestReady='1';
     const input=form.querySelector('input[name="q"]');
-    if(!input) return;
+    if(input) sources.push({input,host:form});
+  });
+  const catalogInput=document.querySelector('#catalogSearch');
+  if(catalogInput) sources.push({input:catalogInput,host:catalogInput.parentElement||catalogInput});
+
+  sources.forEach(({input,host})=>{
+    if(input.dataset.suggestReady==='1') return;
+    input.dataset.suggestReady='1';
     const box=document.createElement('div');
     box.className='search-suggestions';
     box.hidden=true;
-    form.parentElement?.appendChild(box);
+    host.appendChild(box);
+
     const render=()=>{
       const q=input.value.toLowerCase().trim();
       if(!q){box.hidden=true;box.innerHTML='';return;}
       const terms=q.split(/\s+/).filter(Boolean);
+      const selectedCategory=document.querySelector('#category')?.value||'All';
       const matches=(products||[]).filter(p=>{
+        if(input.id==='catalogSearch' && selectedCategory!=='All' && String(p.category)!==String(selectedCategory)) return false;
         const hay=[p.name,p.brand,p.category,p.description].join(' ').toLowerCase();
         return terms.every(t=>hay.includes(t));
       }).sort((a,b)=>{
@@ -122,30 +131,38 @@ function setupSearchSuggestions(products){
         const bp=bn.startsWith(q)?0:bn.includes(q)?1:2;
         return ap-bp || Number(b.featured)-Number(a.featured);
       }).slice(0,5);
-      if(!matches.length){box.innerHTML='<div class="suggest-empty">No matching product</div>';box.hidden=false;return;}
+      if(!matches.length){
+        box.innerHTML='<div class="suggest-empty">No matching product</div>';
+        box.hidden=false;
+        return;
+      }
       box.innerHTML=matches.map(p=>`<button type="button" class="suggest-item" data-suggest-product="${escapeHtml(p.id)}"><span class="suggest-thumb">${p.image?`<img src="${escapeHtml(imageUrl(p.image))}" alt="" loading="lazy" decoding="async">`:escapeHtml(CATEGORY_ICONS[p.category]||'✦')}</span><span class="suggest-copy"><strong>${escapeHtml(p.name)}</strong><small>${escapeHtml(p.brand||p.category||'')}</small></span><b>${money(p.price)}</b></button>`).join('');
       box.hidden=false;
     };
+
     input.addEventListener('input',render);
     input.addEventListener('focus',()=>{if(input.value.trim())render()});
-    form.addEventListener('submit',()=>closeSearchSuggestions());
+    if(input.form) input.form.addEventListener('submit',()=>closeSearchSuggestions());
+
     box.addEventListener('click',e=>{
-      const item=e.target.closest('[data-suggest-product]'); if(!item)return;
-      e.preventDefault(); e.stopPropagation();
+      const item=e.target.closest('[data-suggest-product]');
+      if(!item)return;
+      e.preventDefault();
+      e.stopPropagation();
       const p=(window.FG_PRODUCTS||products||[]).find(x=>String(x.id)===String(item.dataset.suggestProduct));
       closeSearchSuggestions();
-      if(p && document.querySelector('#productModal')) showProduct(p);
-      else if(p) location.href='products.html?q='+encodeURIComponent(p.name);
+      if(!p)return;
+      showProduct(p);
     });
   });
+
   if(!window.FG_SEARCH_OUTSIDE_BOUND){
     window.FG_SEARCH_OUTSIDE_BOUND=true;
     document.addEventListener('click',e=>{
-      if(!e.target.closest('.search') && !e.target.closest('.search-suggestions')) closeSearchSuggestions();
+      if(!e.target.closest('.search') && !e.target.closest('#catalogSearch') && !e.target.closest('.search-suggestions')) closeSearchSuggestions();
     });
   }
 }
-
 function setupInteractions(products){
   if(window.FG_INTERACTIONS_BOUND)return;
   window.FG_INTERACTIONS_BOUND=true;
