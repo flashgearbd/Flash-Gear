@@ -266,3 +266,16 @@ button:active, [role="button"]:active, .clickable:active,
 /* Suggestions also work on the catalog search field */
 .catalog-tools{position:relative;}
 .catalog-tools .search-suggestions{top:56px;left:0;right:auto;width:min(560px,calc(100vw - 24px));z-index:600;}
+
+
+/* ===== SEARCH SUGGESTIONS — never clip inside the search pill ===== */
+.search{overflow:visible !important;z-index:300;}
+.search button{border-radius:0 999px 999px 0;}
+.search-suggestions{display:block !important;}
+.search-suggestions[hidden]{display:none !important;}
+.search-suggestions{z-index:9999 !important;}
+.catalog-tools .search-suggestions{z-index:9999 !important;}
+
+/* Softer hero edge: let the image disappear naturally into the page background. */
+.hero::before{height:54px !important;opacity:.9 !important;background:linear-gradient(180deg,var(--bg) 0%,rgba(243,241,236,.72) 45%,rgba(243,241,236,0) 100%) !important;}
+.hero::after{height:110px !important;background:linear-gradient(180deg,rgba(243,241,236,0) 0%,rgba(243,241,236,.78) 55%,var(--bg) 100%) !important;}
