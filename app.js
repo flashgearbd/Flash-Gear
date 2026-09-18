@@ -91,13 +91,32 @@ function renderProducts(list,id){const el=document.querySelector(id);if(!el)retu
 const CACHE_KEY="fg_products_cache_v2", CACHE_TTL=5*60*1000;
 function readCachedProducts(){try{const x=JSON.parse(localStorage.getItem(CACHE_KEY)||"null");if(x&&Array.isArray(x.data))return x.data}catch{}return null}
 function writeCachedProducts(data){try{localStorage.setItem(CACHE_KEY,JSON.stringify({time:Date.now(),data}))}catch{}}
-async function fetchProducts(){
+let FG_PRODUCTS_PROMISE = null;
+function readCachedProducts(){try{const x=JSON.parse(localStorage.getItem(CACHE_KEY)||"null");if(x&&Array.isArray(x.data))return x.data}catch{}return null}
+function writeCachedProducts(data){try{localStorage.setItem(CACHE_KEY,JSON.stringify({time:Date.now(),data}))}catch{}}
+async function fetchProducts(force=false){
+  if(!force && FG_PRODUCTS_PROMISE)return FG_PRODUCTS_PROMISE;
   if(!CONFIG.productsApiUrl||CONFIG.productsApiUrl.includes("PASTE_"))return CONFIG.fallbackProducts;
-  try{const r=await fetch(CONFIG.productsApiUrl,{cache:"no-store"});if(!r.ok)throw Error(r.status);const d=await r.json();if(!Array.isArray(d))throw Error("Invalid data");writeCachedProducts(d);return d}catch(e){console.warn("Product API unavailable",e);return readCachedProducts()||CONFIG.fallbackProducts}
+  FG_PRODUCTS_PROMISE=(async()=>{
+    const controller=new AbortController();
+    const timer=setTimeout(()=>controller.abort(),7000);
+    try{
+      const r=await fetch(CONFIG.productsApiUrl,{cache:"no-store",signal:controller.signal,redirect:"follow"});
+      if(!r.ok)throw Error(r.status);
+      const d=await r.json();
+      if(!Array.isArray(d))throw Error("Invalid data");
+      writeCachedProducts(d);
+      return d;
+    }catch(e){
+      console.warn("Product API unavailable",e);
+      return readCachedProducts()||CONFIG.fallbackProducts;
+    }finally{clearTimeout(timer);}
+  })();
+  try{return await FG_PRODUCTS_PROMISE}finally{if(!force)FG_PRODUCTS_PROMISE=null;}
 }
 async function loadProductsFast(onData){
   const cached=readCachedProducts();
-  if(cached?.length){onData(cached,true);}
+  if(cached?.length)onData(cached,true);
   const fresh=await fetchProducts();
   if(!cached||JSON.stringify(fresh)!==JSON.stringify(cached))onData(fresh,false);
   return fresh;
@@ -106,12 +125,9 @@ async function loadProductsFast(onData){
 function closeSearchSuggestions(except=null){
   document.querySelectorAll('.search-suggestions').forEach(box=>{if(box!==except){box.hidden=true;box.innerHTML='';}});
 }
-function setupSearchSuggestions(products){
-  // Bind once. Always read the latest product list so suggestions work after
-  // cached/fresh API refreshes on every page.
+function setupSearchSuggestions(products=[]){
   if(window.FG_SEARCH_SUGGESTIONS_READY)return;
   window.FG_SEARCH_SUGGESTIONS_READY=true;
-
   const getProducts=()=>Array.isArray(window.FG_PRODUCTS)?window.FG_PRODUCTS:(Array.isArray(products)?products:[]);
   const sources=[];
   document.querySelectorAll('.search').forEach(form=>{
@@ -123,69 +139,60 @@ function setupSearchSuggestions(products){
 
   sources.forEach(({input,host})=>{
     const box=document.createElement('div');
-    box.className='search-suggestions';
-    box.hidden=true;
-    host.appendChild(box);
-
-    const render=()=>{
+    box.className='search-suggestions'; box.hidden=true; host.appendChild(box);
+    let lastQuery='';
+    const render=async()=>{
       const q=String(input.value||'').toLowerCase().trim();
-      if(!q){box.hidden=true;box.innerHTML='';return;}
+      if(!q){box.hidden=true;box.innerHTML='';lastQuery='';return;}
+      lastQuery=q;
+      let all=getProducts();
+      if(!all.length){
+        box.innerHTML='<div class="suggest-loading"><span class="suggest-spinner"></span>Finding products…</div>';box.hidden=false;
+        const fresh=await fetchProducts();
+        if(lastQuery!==String(input.value||'').toLowerCase().trim())return;
+        all=fresh||[];window.FG_PRODUCTS=all;
+      }
       const terms=q.split(/\s+/).filter(Boolean);
-      const all=getProducts();
       const selectedCategory=document.querySelector('#category')?.value||'All';
       const matches=all.filter(p=>{
-        if(input.id==='catalogSearch' && selectedCategory!=='All' && String(p.category)!==String(selectedCategory))return false;
+        if(input.id==='catalogSearch'&&selectedCategory!=='All'&&String(p.category)!==String(selectedCategory))return false;
         const hay=[p.name,p.brand,p.category,p.description].map(v=>String(v||'').toLowerCase()).join(' ');
         return terms.every(t=>hay.includes(t));
       }).sort((a,b)=>{
         const an=String(a.name||'').toLowerCase(),bn=String(b.name||'').toLowerCase();
         const ap=an===q?0:an.startsWith(q)?1:an.includes(q)?2:3;
         const bp=bn===q?0:bn.startsWith(q)?1:bn.includes(q)?2:3;
-        return ap-bp || Number(b.featured)-Number(a.featured);
+        return ap-bp||Number(b.featured)-Number(a.featured);
       }).slice(0,5);
-
-      if(!matches.length){
-        box.innerHTML='<div class="suggest-empty">No matching product</div>';
-        box.hidden=false;
-        return;
-      }
+      if(!matches.length){box.innerHTML='<div class="suggest-empty">No matching product</div>';box.hidden=false;return;}
       box.innerHTML=matches.map(p=>`<button type="button" class="suggest-item" data-suggest-product="${escapeHtml(p.id)}"><span class="suggest-thumb">${p.image?`<img src="${escapeHtml(imageUrl(p.image))}" alt="" loading="lazy" decoding="async">`:escapeHtml(CATEGORY_ICONS[p.category]||'✦')}</span><span class="suggest-copy"><strong>${escapeHtml(p.name)}</strong><small>${escapeHtml(p.brand||p.category||'')}</small></span><b>${money(p.price)}</b></button>`).join('');
       box.hidden=false;
     };
-
-    input.addEventListener('input',()=>{render(); clearTimeout(input._fgSuggestTimer); input._fgSuggestTimer=setTimeout(render,80);});
-    input.addEventListener('compositionend',render);
-    input.addEventListener('focus',()=>{if(input.value.trim())render()});
+    const schedule=()=>{clearTimeout(input._fgSuggestTimer);input._fgSuggestTimer=setTimeout(()=>render(),45)};
+    input.addEventListener('input',schedule,{passive:true});
+    input.addEventListener('compositionend',schedule);
+    input.addEventListener('focus',()=>{if(input.value.trim())schedule()});
     input.addEventListener('keydown',e=>{if(e.key==='Escape'){box.hidden=true;box.innerHTML='';}});
-    if(input.form) input.form.addEventListener('submit',()=>closeSearchSuggestions());
-
+    if(input.form)input.form.addEventListener('submit',()=>closeSearchSuggestions());
     box.addEventListener('mousedown',e=>e.preventDefault());
+    box.addEventListener('touchstart',e=>e.stopPropagation(),{passive:true});
     box.addEventListener('click',e=>{
-      const item=e.target.closest('[data-suggest-product]');
-      if(!item)return;
-      e.preventDefault();
-      e.stopPropagation();
+      const item=e.target.closest('[data-suggest-product]');if(!item)return;
+      e.preventDefault();e.stopPropagation();
       const p=getProducts().find(x=>String(x.id)===String(item.dataset.suggestProduct));
-      closeSearchSuggestions();
-      if(!p)return;
+      closeSearchSuggestions();if(!p)return;
       input.value=p.name||'';
-      // Hide the mobile/Android keyboard before opening Product Info.
       input.blur();
-      if(document.activeElement && typeof document.activeElement.blur === "function") document.activeElement.blur();
-      setTimeout(()=>{
-        if(document.activeElement && typeof document.activeElement.blur === "function") document.activeElement.blur();
-        showProduct(p);
-      },80);
+      try{input.setSelectionRange(0,0)}catch{}
+      setTimeout(()=>{document.activeElement?.blur?.();showProduct(p)},30);
     });
   });
-
   if(!window.FG_SEARCH_OUTSIDE_BOUND){
     window.FG_SEARCH_OUTSIDE_BOUND=true;
-    document.addEventListener('click',e=>{
-      if(!e.target.closest('.search')&&!e.target.closest('#catalogSearch')&&!e.target.closest('.search-suggestions'))closeSearchSuggestions();
-    });
+    document.addEventListener('click',e=>{if(!e.target.closest('.search')&&!e.target.closest('#catalogSearch')&&!e.target.closest('.search-suggestions'))closeSearchSuggestions()});
   }
 }
+
 function setupInteractions(products){
   if(window.FG_INTERACTIONS_BOUND)return;
   window.FG_INTERACTIONS_BOUND=true;
@@ -274,7 +281,9 @@ document.addEventListener("DOMContentLoaded",async()=>{
   document.querySelectorAll("[data-facebook]").forEach(a=>a.href=CONFIG.facebook);document.querySelectorAll("[data-instagram]").forEach(a=>a.href=CONFIG.instagram);document.querySelectorAll("#year").forEach(e=>e.textContent=new Date().getFullYear());
   ensureCartDrawer();updateCartUI();
   let currentProducts=[];
-  const apply=data=>{currentProducts=data||[];window.FG_PRODUCTS=currentProducts;buildCategoryMenu(currentProducts);renderCategories(currentProducts);const featured=currentProducts.filter(p=>p.featured);if(document.querySelector("#featured"))renderProducts((featured.length?featured:currentProducts).slice(0,8),"#featured");setupCatalog(currentProducts);setupSearchSuggestions(currentProducts)};
+  window.FG_PRODUCTS=readCachedProducts()||[];
+  setupSearchSuggestions(window.FG_PRODUCTS);
+  const apply=data=>{currentProducts=data||[];window.FG_PRODUCTS=currentProducts;buildCategoryMenu(currentProducts);renderCategories(currentProducts);const featured=currentProducts.filter(p=>p.featured);if(document.querySelector("#featured"))renderProducts((featured.length?featured:currentProducts).slice(0,8),"#featured");setupCatalog(currentProducts)};
   setupInteractions(currentProducts);
   await loadProductsFast(apply);
   // Rebind catalog after background refresh if necessary

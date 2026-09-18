@@ -412,3 +412,23 @@ button:active, [role="button"]:active, .clickable:active,
   .brand { padding-top:8px !important; }
   .brand img { margin-top:0 !important; }
 }
+
+
+/* ===== FINAL MICRO-POLISH: faster perceived loading + smooth UI ===== */
+.suggest-loading{display:flex;align-items:center;justify-content:center;gap:8px;padding:14px;color:var(--muted);font-size:12px}
+.suggest-spinner{width:14px;height:14px;border:2px solid #cfe5f5;border-top-color:#0a8cff;border-radius:50%;animation:fgSpin .65s linear infinite}
+@keyframes fgSpin{to{transform:rotate(360deg)}}
+.search-suggestions{transform-origin:top center;animation:fgSuggestIn 180ms cubic-bezier(.22,1,.36,1) both}
+.search-suggestions[hidden]{animation:none}
+@keyframes fgSuggestIn{from{opacity:0;transform:translateY(-4px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
+.product-modal-dialog,.cart-panel,.category-menu{transition:transform 280ms cubic-bezier(.22,1,.36,1),opacity 220ms ease,box-shadow 280ms ease}
+.product-card,.category-pill,.trust-item,.btn,.cart,.nav a,.category-nav>button,.quick-add,.drawer-close,.modal-close{transition:transform 220ms cubic-bezier(.22,1,.36,1),box-shadow 220ms ease,background-color 220ms ease,border-color 220ms ease,color 180ms ease,opacity 180ms ease}
+.product-card:hover{transform:translateY(-3px);box-shadow:0 16px 34px rgba(17,70,110,.10)}
+.category-pill:hover,.trust-item:hover{transform:translateY(-2px)}
+.btn:active,.cart:active,.quick-add:active,.category-nav>button:active,.nav a:active{transform:scale(.97)}
+img{transition:opacity 220ms ease,transform 320ms cubic-bezier(.22,1,.36,1)}
+.product-card:hover .product-visual img{transform:scale(1.025)}
+/* Upper hero edge must stay completely natural: no top fade/mask. */
+.hero::before{display:none !important}
+.hero-bg{-webkit-mask-image:none !important;mask-image:none !important}
+@media (prefers-reduced-motion:reduce){.suggest-spinner{animation:none}.product-card:hover .product-visual img{transform:none}}
