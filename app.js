@@ -151,10 +151,66 @@ function setupSimilarProducts(current){
 function similarCard(p,i){const img=p.image?`<img src="${escapeHtml(imageUrl(p.image))}" alt="${escapeHtml(p.name||'Product')}" loading="lazy" decoding="async">`:'';return `<article class="similar-card" data-similar-id="${escapeHtml(p.id)}"><a href="product.html?id=${encodeURIComponent(p.id)}" class="similar-link"><div class="similar-image">${img||escapeHtml(CATEGORY_ICONS[p.category]||'✦')}</div><div class="similar-copy"><small>${escapeHtml(p.brand||p.category||'')}</small><strong>${escapeHtml(p.name||'Product')}</strong><b>${money(p.price)}</b></div></a></article>`}
 
 function categoryPill(cat){return `<a class="category-pill" href="products.html?cat=${encodeURIComponent(cat)}"><span class="cat-icon">${escapeHtml(CATEGORY_ICONS[cat]||"✦")}</span><span>${escapeHtml(cat)}</span><span class="pill-arrow">›</span></a>`}
+const HOME_ACCESSORY_CATEGORIES=["Adapter & Cable","Charger","Earbud","Headphone","Neckband","Earphone","Speaker","Powerbank","Smart watch","Tripod","Boya","Screen Protector","Phone Case"];
+function homeSubItem(label,cat,icon,extra=""){
+  return `<a class="home-subitem ${extra}" href="products.html?cat=${encodeURIComponent(cat)}"><span>${escapeHtml(icon||CATEGORY_ICONS[cat]||"✦")}</span><strong>${escapeHtml(label)}</strong><b>›</b></a>`;
+}
 function renderCategories(products=[]){
   const target=document.querySelector("#homeCategories");if(!target)return;
-  const extras=[...new Set(products.map(p=>String(p.category||"").trim()).filter(Boolean))].filter(c=>!CATEGORY_LIST.includes(c));
-  target.innerHTML=[...CATEGORY_LIST,...extras].map(categoryPill).join("");
+  const available=new Set(products.map(p=>String(p.category||"").trim()).filter(Boolean));
+  const accessories=[...HOME_ACCESSORY_CATEGORIES,...[...available].filter(c=>!HOME_ACCESSORY_CATEGORIES.includes(c)&&c!=="Mobile Phones"&&c!=="Feature Phone")].filter((x,i,a)=>x&&a.indexOf(x)===i);
+  target.innerHTML=`
+    <article class="home-shop-card" data-home-shop="mobile">
+      <button class="home-shop-trigger" type="button" aria-expanded="false">
+        <span class="home-shop-icon">▯</span>
+        <span class="home-shop-copy"><strong>Mobile</strong><small>Smartphone &amp; Feature Phone</small></span>
+        <span class="home-shop-chevron">›</span>
+      </button>
+      <div class="home-shop-panel"><div class="home-shop-panel-inner"><div class="home-subgrid">
+        ${homeSubItem("Smartphone","Mobile Phones","▯","home-mobile-option")}
+        ${homeSubItem("Feature Phone","Feature Phone","☎","home-mobile-option")}
+      </div></div></div>
+    </article>
+    <article class="home-shop-card" data-home-shop="accessories">
+      <button class="home-shop-trigger" type="button" aria-expanded="false">
+        <span class="home-shop-icon">✦</span>
+        <span class="home-shop-copy"><strong>Accessories &amp; Gadgets</strong><small>All mobile accessories &amp; everyday gadgets</small></span>
+        <span class="home-shop-chevron">›</span>
+      </button>
+      <div class="home-shop-panel"><div class="home-shop-panel-inner"><div class="home-subgrid">
+        ${accessories.map(c=>homeSubItem(c,c,CATEGORY_ICONS[c]||"✦")).join("")}
+      </div></div></div>
+    </article>`;
+  target.querySelectorAll('.home-shop-trigger').forEach(btn=>btn.addEventListener('click',()=>{
+    const card=btn.closest('.home-shop-card');
+    const willOpen=!card.classList.contains('open');
+    target.querySelectorAll('.home-shop-card.open').forEach(other=>{if(other!==card){other.classList.remove('open');other.querySelector('.home-shop-trigger')?.setAttribute('aria-expanded','false')}});
+    card.classList.toggle('open',willOpen);btn.setAttribute('aria-expanded',String(willOpen));
+  }));
+}
+function renderFeaturedProducts(list=[]){
+  const track=document.querySelector('#featured');if(!track)return;
+  const items=(list||[]).slice(0,10);
+  track._products=items;
+  track.innerHTML=items.length?items.map((p,i)=>{const html=productCard(p,i);return html.replace('data-product-index="'+i+'"','data-product-index="'+i+'" style="--i:'+i+'"')}).join(''):'<div class="no-results"><div>⌛</div><p>Featured products will appear here.</p></div>';
+  setupFeaturedSlider();
+}
+function setupFeaturedSlider(){
+  const track=document.querySelector('#featured'),viewport=track?.parentElement;if(!track||!viewport||track._featuredBound)return;
+  track._featuredBound=true;
+  const prev=document.querySelector('[data-featured-prev]'),next=document.querySelector('[data-featured-next]');
+  let pos=0,timer=null,paused=false;
+  const cards=()=>track.querySelectorAll('.product-card');
+  const stepWidth=()=>{const card=track.querySelector('.product-card');if(!card)return 0;return card.getBoundingClientRect().width+(parseFloat(getComputedStyle(track).gap)||16)};
+  const maxStep=()=>{const n=cards().length;if(!n)return 0;const w=stepWidth();const visible=Math.max(1,Math.floor(viewport.clientWidth/w));return Math.max(0,n-visible)};
+  const move=(dir=1)=>{const w=stepWidth();if(!w)return;const max=maxStep();if(max<=0)return;pos+=dir;if(pos>max)pos=0;if(pos<0)pos=max;track.style.transform=`translate3d(${-pos*w}px,0,0)`};
+  const start=()=>{clearInterval(timer);timer=setInterval(()=>{if(!paused)move(1)},4200)};
+  const stop=()=>clearInterval(timer);
+  prev?.addEventListener('click',()=>{move(-1);start()});next?.addEventListener('click',()=>{move(1);start()});
+  viewport.addEventListener('mouseenter',()=>{paused=true});viewport.addEventListener('mouseleave',()=>{paused=false});
+  viewport.addEventListener('touchstart',()=>{paused=true;stop()},{passive:true});viewport.addEventListener('touchend',()=>{paused=false;start()},{passive:true});
+  window.addEventListener('resize',()=>{pos=0;track.style.transform='translate3d(0,0,0)'},{passive:true});
+  setTimeout(start,900);
 }
 function productCard(p,index){
   const price=Number(p.price||0),mrp=Number(p.mrp||0),discount=mrp>price?Math.round((1-price/mrp)*100):0;
@@ -356,33 +412,9 @@ function setupSidebar(){
   document.addEventListener('keydown',e=>{if(e.key==='Escape')close()});
 }
 
-
-function renderFeaturedHomeSections(products){
-  const valid=Array.isArray(products)?products.filter(p=>p&&p.name):[];
-  const dealList=[...valid].sort((a,b)=>{
-    const da=(Number(a.mrp||0)>Number(a.price||0))?(1-Number(a.price||0)/Number(a.mrp||1)):0;
-    const db=(Number(b.mrp||0)>Number(b.price||0))?(1-Number(b.price||0)/Number(b.mrp||1)):0;
-    return db-da || Number(b.featured)-Number(a.featured);
-  }).slice(0,10);
-  const feat=(valid.filter(p=>p.featured).length?valid.filter(p=>p.featured):valid).slice(0,12);
-  const makeRail=(list,id)=>{const el=document.querySelector(id);if(!el)return;el._products=list;el.innerHTML=list.length?list.map((p,i)=>productCard(p,i)).join(''):'<div class="fg-loading">No products available yet.</div>';};
-  makeRail(dealList,'#exclusiveDeals');
-  makeRail(feat,'#featured');
-  const brands=[...new Set(valid.map(p=>String(p.brand||'').trim()).filter(Boolean))].slice(0,10);
-  const chips=document.querySelector('#brandChips'), brandRail=document.querySelector('#brandProducts');
-  if(chips){chips.innerHTML=brands.map((b,i)=>`<button type="button" class="fg-brand-chip ${i===0?'active':''}" data-home-brand="${escapeHtml(b)}">${escapeHtml(b)}</button>`).join('');}
-  const renderBrand=(brand)=>{const list=brand?valid.filter(p=>String(p.brand||'').toLowerCase()===String(brand).toLowerCase()).slice(0,10):valid.slice(0,10);makeRail(list,'#brandProducts');};
-  renderBrand(brands[0]||'');
-  if(chips&&!chips._bound){chips._bound=true;chips.addEventListener('click',e=>{const b=e.target.closest('[data-home-brand]');if(!b)return;chips.querySelectorAll('.fg-brand-chip').forEach(x=>x.classList.remove('active'));b.classList.add('active');renderBrand(b.dataset.homeBrand);});}
-}
-function renderHomeCategoriesModern(products=[]){
-  const target=document.querySelector('#homeCategories'); if(!target)return;
-  const cats=[...CATEGORY_LIST,...new Set(products.map(p=>String(p.category||'').trim()).filter(Boolean))].filter((x,i,a)=>x&&a.indexOf(x)===i).slice(0,18);
-  target.innerHTML=cats.map(cat=>`<a class="fg-cat-tile" href="products.html?cat=${encodeURIComponent(cat)}"><span class="fg-cat-icon-large">${escapeHtml(CATEGORY_ICONS[cat]||'✦')}</span><strong>${escapeHtml(cat)}</strong></a>`).join('');
-}
-
 function setupCatalog(products){const catalog=document.querySelector("#catalog");if(!catalog)return;const s=document.querySelector("#catalogSearch"),c=document.querySelector("#category"),sort=document.querySelector("#sort"),params=new URLSearchParams(location.search),q0=params.get("q"),cat0=params.get("cat");if(s&&q0)s.value=q0;
   const cats=[...new Set([...CATEGORY_LIST,...products.map(p=>p.category).filter(Boolean)])];if(c)c.innerHTML=`<option value="All">All Categories</option>`+cats.map(x=>`<option>${escapeHtml(x)}</option>`).join("");if(c&&cat0)c.value=cat0;
+  const catalogNames={"Mobile Phones":"Smartphone","Feature Phone":"Feature Phone"};const title=document.querySelector("#catalogTitle"),intro=document.querySelector("#catalogIntro"),kicker=document.querySelector("#catalogKicker");if(cat0){const display=catalogNames[cat0]||cat0;if(title)title.textContent=display;if(kicker)kicker.textContent="FLASH GEAR BD · "+display.toUpperCase();if(intro)intro.textContent=`Browse ${display} products, compare prices and open any product for full specifications, warranty and ordering options.`;}
   const filter=()=>{const q=(s?.value||"").toLowerCase().trim(),cat=c?.value||"All";let list=products.filter(p=>(cat==="All"||p.category===cat)&&(!q||[p.name,p.category,p.brand,p.description].join(" ").toLowerCase().includes(q)));const mode=sort?.value||"featured";if(mode==="low")list.sort((a,b)=>a.price-b.price);if(mode==="high")list.sort((a,b)=>b.price-a.price);if(mode==="name")list.sort((a,b)=>String(a.name).localeCompare(String(b.name)));if(mode==="featured")list.sort((a,b)=>Number(b.featured)-Number(a.featured));renderProducts(list,"#catalog");const rc=document.querySelector("#resultCount");if(rc)rc.textContent=`${list.length} product${list.length===1?"":"s"}`};
   s?.addEventListener("input",filter);c?.addEventListener("change",filter);sort?.addEventListener("change",filter);filter();
 }
@@ -394,7 +426,7 @@ document.addEventListener("DOMContentLoaded",async()=>{
   const earlyParams=new URLSearchParams(location.search);
   if(document.querySelector('#productDetail')){try{const cachedProduct=JSON.parse(sessionStorage.getItem('fg_open_product')||'null');if(cachedProduct&&String(cachedProduct.id)===String(earlyParams.get('id')))renderProductPage(cachedProduct)}catch{}}
   let currentProducts=[];
-  const apply=data=>{currentProducts=data||[];window.FG_PRODUCTS=currentProducts;buildCategoryMenu(currentProducts);renderCategories(currentProducts);renderHomeCategoriesModern(currentProducts);renderFeaturedHomeSections(currentProducts);const featured=currentProducts.filter(p=>p.featured);if(document.querySelector("#featured") && !document.querySelector("#exclusiveDeals"))renderProducts((featured.length?featured:currentProducts).slice(0,8),"#featured");setupCatalog(currentProducts);setupSearchSuggestions(currentProducts); window.FG_REFRESH_SUGGESTIONS?.()};
+  const apply=data=>{currentProducts=data||[];window.FG_PRODUCTS=currentProducts;buildCategoryMenu(currentProducts);renderCategories(currentProducts);const featured=currentProducts.filter(p=>p.featured);if(document.querySelector("#featured"))renderFeaturedProducts((featured.length?featured:currentProducts).slice(0,10));setupCatalog(currentProducts);setupSearchSuggestions(currentProducts); window.FG_REFRESH_SUGGESTIONS?.();};
   setupInteractions(currentProducts);
   await loadProductsFast(apply);
   // Rebind catalog after background refresh if necessary
