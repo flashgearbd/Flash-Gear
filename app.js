@@ -60,7 +60,7 @@ const CATEGORY_ICONS = {
 
 const money = n => "৳" + Number(n || 0).toLocaleString("en-BD");
 function escapeHtml(v){return String(v??"").replace(/[&<>'"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;","\"":"&quot;"}[c]));}
-function imageUrl(v){const u=String(v||"").trim();if(!u)return "";const m=u.match(/drive\.google\.com\/(?:uc\?(?:export=[^&]+&)?id=|file\/d\/)([A-Za-z0-9_-]+)/);return m?`https://drive.google.com/thumbnail?id=${m[1]}&sz=w1200`:u;}
+function imageUrl(v){const u=String(v||"").trim();if(!u)return "";const m=u.match(/drive\.google\.com\/(?:uc\?(?:export=[^&]+&)?id=|file\/d\/)([A-Za-z0-9_-]+)/);return m?`https://drive.google.com/uc?export=view&id=${m[1]}`:u;}
 function wa(name=""){const t=name?`Hello FLASH GEAR BD, I want to order: ${name}`:`Hello FLASH GEAR BD, I want to know about your products.`;return `https://wa.me/${CONFIG.whatsappNumber}?text=${encodeURIComponent(t)}`;}
 function waCart(items){const lines=items.map(i=>`• ${i.name} × ${i.qty} — ${money(i.price*i.qty)}`);const total=items.reduce((s,i)=>s+i.price*i.qty,0);return `https://wa.me/${CONFIG.whatsappNumber}?text=${encodeURIComponent(`Hello FLASH GEAR BD, I want to order:\n${lines.join("\n")}\n\nTotal: ${money(total)}`)}`;}
 
@@ -90,15 +90,65 @@ function ensureCartDrawer(){if(document.querySelector("#cartDrawer"))return;docu
 function openCart(){ensureCartDrawer();const d=document.querySelector("#cartDrawer");d.hidden=false;document.body.classList.add("drawer-open");requestAnimationFrame(()=>d.classList.add("is-open"));updateCartUI()}
 function closeCart(){const d=document.querySelector("#cartDrawer");if(!d)return;d.classList.remove("is-open");setTimeout(()=>{d.hidden=true},180);document.body.classList.remove("drawer-open")}
 
-function ensureProductModal(){if(document.querySelector("#productModal"))return;document.body.insertAdjacentHTML("beforeend",`<div id="productModal" class="product-modal" hidden><div class="product-modal-backdrop" data-close-modal></div><div class="product-modal-dialog" role="dialog" aria-modal="true"><button class="modal-close" data-close-modal aria-label="Close">×</button><div id="modalProductContent"></div></div></div>`)}
-function showProduct(p){
-  ensureProductModal();const m=document.querySelector("#productModal"),c=document.querySelector("#modalProductContent");
-  const img=p.image?`<img src="${escapeHtml(imageUrl(p.image))}" alt="${escapeHtml(p.name||"Product")}" decoding="async" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span class="modal-placeholder" hidden>${escapeHtml(CATEGORY_ICONS[p.category]||"✦")}</span>`:`<span class="modal-placeholder">${escapeHtml(CATEGORY_ICONS[p.category]||"✦")}</span>`;
-  const price=Number(p.price||0),mrp=Number(p.mrp||0),discount=mrp>price?Math.round((1-price/mrp)*100):0;
-  c.innerHTML=`<div class="modal-product"><div class="modal-product-image">${img}</div><div class="modal-product-info"><div class="product-kicker">${escapeHtml(p.category||"Gadgets")}</div><h2>${escapeHtml(p.name||"Product")}</h2>${p.brand?`<div class="modal-brand">${escapeHtml(p.brand)}</div>`:""}<div class="modal-price">${money(price)} ${mrp>price?`<del>${money(mrp)}</del><span class="save-pill">-${discount}%</span>`:""}</div><div class="product-meta">${p.brand?`<div><span>Brand</span><strong>${escapeHtml(p.brand)}</strong></div>`:""}<div><span>Category</span><strong>${escapeHtml(p.category||"Gadgets")}</strong></div><div><span>Availability</span><strong>${escapeHtml(p.stock||"In Stock")}</strong></div>${p.warranty?`<div><span>Warranty</span><strong>${escapeHtml(p.warranty)}</strong></div>`:""}</div><div class="modal-actions"><button class="btn btn-blue" data-add-product="${escapeHtml(p.id)}">Add to Cart</button><a class="btn btn-soft" href="${wa(p.name)}" target="_blank" rel="noopener">WhatsApp Order</a></div>${p.description?`<section class="modal-section"><h3>Product Description</h3><p>${escapeHtml(p.description)}</p></section>`:""}</div></div>`;
-  m.hidden=false;requestAnimationFrame(()=>m.classList.add("is-open"));document.body.classList.add("modal-open");
+function openProductPage(p){
+  if(!p || !p.id)return;
+  closeSearchSuggestions();
+  document.activeElement?.blur?.();
+  try{sessionStorage.setItem('fg_open_product',JSON.stringify(p));}catch{}
+  const url='product.html?id='+encodeURIComponent(p.id);
+  if(window.location.pathname.endsWith('/product.html') || window.location.pathname.endsWith('product.html')){
+    history.pushState({productId:p.id},'',url);
+    renderProductPage(p);
+    window.scrollTo({top:0,behavior:'smooth'});
+  }else{
+    location.href=url;
+  }
 }
-function closeProductModal(){const m=document.querySelector("#productModal");if(!m)return;m.classList.remove("is-open");setTimeout(()=>{m.hidden=true},180);document.body.classList.remove("modal-open")}
+function renderProductPage(p){
+  const root=document.querySelector('#productDetail'); if(!root||!p)return;
+  const price=Number(p.price||0), mrp=Number(p.mrp||0), discount=mrp>price?Math.round((1-price/mrp)*100):0;
+  const isPhone=['Mobile Phones','Feature Phone'].includes(String(p.category||''));
+  const label=isPhone?'Specifications':'Product Description';
+  const image=p.image?`<img class="detail-main-image" src="${escapeHtml(imageUrl(p.image))}" alt="${escapeHtml(p.name||'Product')}" decoding="async" fetchpriority="high" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span class="detail-placeholder" hidden>${escapeHtml(CATEGORY_ICONS[p.category]||'✦')}</span>`:`<span class="detail-placeholder">${escapeHtml(CATEGORY_ICONS[p.category]||'✦')}</span>`;
+  root.innerHTML=`
+    <div class="product-breadcrumb"><a href="index.html">Home</a><span>›</span><a href="products.html?cat=${encodeURIComponent(p.category||'')}">${escapeHtml(p.category||'Gadgets')}</a><span>›</span><strong>${escapeHtml(p.name||'Product')}</strong></div>
+    <div class="detail-layout">
+      <section class="detail-gallery"><div class="detail-image-shell">${image}</div></section>
+      <section class="detail-summary">
+        <div class="product-kicker">${escapeHtml(p.category||'Gadgets')}</div>
+        <h1>${escapeHtml(p.name||'Product')}</h1>
+        ${p.brand?`<div class="detail-brand">${escapeHtml(p.brand)}</div>`:''}
+        <div class="detail-price">${money(price)} ${mrp>price?`<del>${money(mrp)}</del><span class="save-pill">-${discount}%</span>`:''}</div>
+        <div class="detail-stock"><span></span>${escapeHtml(p.stock||'In Stock')}</div>
+        <div class="detail-meta">${p.brand?`<div><span>Brand</span><strong>${escapeHtml(p.brand)}</strong></div>`:''}<div><span>Category</span><strong>${escapeHtml(p.category||'Gadgets')}</strong></div>${p.warranty?`<div><span>Warranty</span><strong>${escapeHtml(p.warranty)}</strong></div>`:''}</div>
+        <div class="detail-actions"><button class="btn btn-blue btn-large" data-add-product="${escapeHtml(p.id)}">Add to Cart</button><a class="btn btn-soft btn-large" href="${wa(p.name)}" target="_blank" rel="noopener">WhatsApp Order</a></div>
+        <div class="detail-benefits"><span>🛡️ Original</span><span>↻ Warranty</span><span>🚚 Delivery</span><span>💬 Support</span></div>
+      </section>
+    </div>
+    <section class="detail-info-card"><div class="detail-tabs"><button class="detail-tab active" type="button" data-detail-tab="info">${label}</button></div><div class="detail-tab-panel" id="detailInfoPanel">${escapeHtml(p.description||'Product information will be updated soon.').replace(/\n/g,'<br>')}</div></section>
+    <section class="similar-section"><div class="section-head"><div><span class="eyebrow">YOU MAY ALSO LIKE</span><h2>Similar Products</h2></div><a href="products.html?cat=${encodeURIComponent(p.category||'')}">See All →</a></div><div class="similar-viewport"><div id="similarTrack" class="similar-track"></div><button class="similar-arrow prev" type="button" data-similar-prev aria-label="Previous">‹</button><button class="similar-arrow next" type="button" data-similar-next aria-label="Next">›</button></div></section>`;
+  setupSimilarProducts(p);
+  window.scrollTo({top:0,behavior:'instant'});
+}
+function setupSimilarProducts(current){
+  const track=document.querySelector('#similarTrack'); if(!track)return;
+  const all=Array.isArray(window.FG_PRODUCTS)?window.FG_PRODUCTS:[];
+  const sameBrand=all.filter(x=>x.id!==current.id && current.brand && String(x.brand).toLowerCase()===String(current.brand).toLowerCase());
+  const sameCat=all.filter(x=>x.id!==current.id && String(x.category||'').toLowerCase()===String(current.category||'').toLowerCase() && !sameBrand.some(b=>b.id===x.id));
+  const rest=all.filter(x=>x.id!==current.id && !sameBrand.some(b=>b.id===x.id) && !sameCat.some(c=>c.id===x.id));
+  const list=[...sameBrand,...sameCat,...rest].slice(0,10);
+  if(!list.length){track.innerHTML='<div class="similar-empty">More similar products will appear here.</div>';return;}
+  const cards=list.map((p,i)=>similarCard(p,i)).join('');
+  track.innerHTML=cards+cards;
+  const viewport=track.parentElement; let pos=0, timer;
+  const step=()=>{const card=track.querySelector('.similar-card');if(!card)return;const gap=parseFloat(getComputedStyle(track).gap)||14;const w=card.getBoundingClientRect().width+gap;pos+=w;if(pos>=w*list.length){track.style.transition='none';pos=0;track.style.transform='translate3d(0,0,0)';requestAnimationFrame(()=>requestAnimationFrame(()=>{track.style.transition='transform .75s var(--ease-premium)';pos=w;track.style.transform=`translate3d(${-pos}px,0,0)`;}));}else{track.style.transform=`translate3d(${-pos}px,0,0)`;}};
+  const start=()=>{clearInterval(timer);timer=setInterval(step,3800)}; const stop=()=>clearInterval(timer);
+  viewport.addEventListener('mouseenter',stop);viewport.addEventListener('mouseleave',start);viewport.addEventListener('touchstart',stop,{passive:true});viewport.addEventListener('touchend',start,{passive:true});
+  document.querySelector('[data-similar-next]')?.addEventListener('click',()=>{step();start()});
+  document.querySelector('[data-similar-prev]')?.addEventListener('click',()=>{const card=track.querySelector('.similar-card');if(!card)return;const gap=parseFloat(getComputedStyle(track).gap)||14;const w=card.getBoundingClientRect().width+gap;pos=Math.max(0,pos-w);track.style.transform=`translate3d(${-pos}px,0,0)`;start()});
+  track.style.transition='transform .75s var(--ease-premium)'; start();
+}
+function similarCard(p,i){const img=p.image?`<img src="${escapeHtml(imageUrl(p.image))}" alt="${escapeHtml(p.name||'Product')}" loading="lazy" decoding="async">`:'';return `<article class="similar-card" data-similar-id="${escapeHtml(p.id)}"><a href="product.html?id=${encodeURIComponent(p.id)}" class="similar-link"><div class="similar-image">${img||escapeHtml(CATEGORY_ICONS[p.category]||'✦')}</div><div class="similar-copy"><small>${escapeHtml(p.brand||p.category||'')}</small><strong>${escapeHtml(p.name||'Product')}</strong><b>${money(p.price)}</b></div></a></article>`}
 
 function categoryPill(cat){return `<a class="category-pill" href="products.html?cat=${encodeURIComponent(cat)}"><span class="cat-icon">${escapeHtml(CATEGORY_ICONS[cat]||"✦")}</span><span>${escapeHtml(cat)}</span><span class="pill-arrow">›</span></a>`}
 function renderCategories(products=[]){
@@ -113,16 +163,17 @@ function productCard(p,index){
 }
 function renderProducts(list,id){const el=document.querySelector(id);if(!el)return;el._products=list;el.innerHTML=list.length?list.map((p,i)=>productCard(p,i)).join(""):`<div class="no-results"><div>⌕</div><h3>No products found</h3><p>Try another category or search.</p></div>`}
 
-const CACHE_KEY="fg_products_cache_v2", CACHE_TTL=5*60*1000;
+const CACHE_KEY="fg_products_cache_v3", CACHE_TTL=30*60*1000;
 function readCachedProducts(){try{const x=JSON.parse(localStorage.getItem(CACHE_KEY)||"null");if(x&&Array.isArray(x.data))return x.data}catch{}return null}
 function writeCachedProducts(data){try{localStorage.setItem(CACHE_KEY,JSON.stringify({time:Date.now(),data}))}catch{}}
 async function fetchProducts(){
   if(!CONFIG.productsApiUrl||CONFIG.productsApiUrl.includes("PASTE_"))return CONFIG.fallbackProducts;
-  try{const r=await fetch(CONFIG.productsApiUrl,{cache:"no-store"});if(!r.ok)throw Error(r.status);const d=await r.json();if(!Array.isArray(d))throw Error("Invalid data");writeCachedProducts(d);return d}catch(e){console.warn("Product API unavailable",e);return readCachedProducts()||CONFIG.fallbackProducts}
+  const controller=new AbortController(); const timer=setTimeout(()=>controller.abort(),7000);
+  try{const r=await fetch(CONFIG.productsApiUrl,{cache:"no-store",signal:controller.signal});if(!r.ok)throw Error(r.status);const d=await r.json();if(!Array.isArray(d))throw Error("Invalid data");writeCachedProducts(d);return d}catch(e){console.warn("Product API unavailable",e);return readCachedProducts()||CONFIG.fallbackProducts}finally{clearTimeout(timer)}
 }
 async function loadProductsFast(onData){
   const cached=readCachedProducts();
-  if(cached?.length){onData(cached,true);}
+  if(cached?.length)onData(cached,true);
   const fresh=await fetchProducts();
   if(!cached||JSON.stringify(fresh)!==JSON.stringify(cached))onData(fresh,false);
   return fresh;
@@ -134,7 +185,7 @@ function closeSearchSuggestions(except=null){
 function setupSearchSuggestions(products){
   // Bind once. Always read the latest product list so suggestions work after
   // cached/fresh API refreshes on every page.
-  if(window.FG_SEARCH_SUGGESTIONS_READY)return;
+  if(window.FG_SEARCH_SUGGESTIONS_READY){ window.FG_REFRESH_SUGGESTIONS?.(); return; }
   window.FG_SEARCH_SUGGESTIONS_READY=true;
 
   const getProducts=()=>Array.isArray(window.FG_PRODUCTS)?window.FG_PRODUCTS:(Array.isArray(products)?products:[]);
@@ -170,7 +221,7 @@ function setupSearchSuggestions(products){
       }).slice(0,5);
 
       if(!matches.length){
-        box.innerHTML='<div class="suggest-empty">No matching product</div>';
+        box.innerHTML=all.length?'<div class="suggest-empty">No matching product</div>':'<div class="suggest-empty">Finding products…</div>';
         box.hidden=false;
         return;
       }
@@ -199,10 +250,11 @@ function setupSearchSuggestions(products){
       if(document.activeElement && typeof document.activeElement.blur === "function") document.activeElement.blur();
       setTimeout(()=>{
         if(document.activeElement && typeof document.activeElement.blur === "function") document.activeElement.blur();
-        showProduct(p);
+        openProductPage(p);
       },80);
     });
   });
+  window.FG_REFRESH_SUGGESTIONS=()=>document.querySelectorAll('.search input[name="q"],#catalogSearch').forEach(inp=>{if(inp.value.trim()) inp.dispatchEvent(new Event('input',{bubbles:true}));});
 
   if(!window.FG_SEARCH_OUTSIDE_BOUND){
     window.FG_SEARCH_OUTSIDE_BOUND=true;
@@ -235,7 +287,7 @@ function setupInteractions(products){
     const card=e.target.closest(".product-card");
     if(card&&!e.target.closest("a,button,input,select")){
       const p=card.parentElement?._products?.[Number(card.dataset.productIndex)];
-      if(p)showProduct(p);
+      if(p)openProductPage(p);
     }
   });
   document.addEventListener("keydown",e=>{
@@ -244,7 +296,7 @@ function setupInteractions(products){
     if(card&&(e.key==="Enter"||e.key===" ")){
       e.preventDefault();
       const p=card.parentElement?._products?.[Number(card.dataset.productIndex)];
-      if(p)showProduct(p);
+      if(p)openProductPage(p);
     }
   });
 }
@@ -288,6 +340,22 @@ function buildCategoryMenu(products=[]){
     });
   }
 }
+function setupSidebar(){
+  if(document.querySelector('#fgSidebar'))return;
+  const cats=[...CATEGORY_LIST];
+  document.body.insertAdjacentHTML('beforeend',`<div id="fgSidebarOverlay" class="fg-sidebar-overlay" hidden></div><aside id="fgSidebar" class="fg-sidebar" aria-hidden="true"><div class="fg-sidebar-head"><a class="fg-sidebar-brand" href="index.html"><img src="flash-gear-logo.webp" alt="FLASH GEAR BD"></a><button type="button" class="fg-sidebar-close" data-sidebar-close aria-label="Close menu">×</button></div><div class="fg-sidebar-menu"><a href="index.html">⌂ <span>Home</span><b>›</b></a><a href="products.html">▦ <span>All Products</span><b>›</b></a><div class="fg-sidebar-label">Categories</div>${cats.map(c=>`<a href="products.html?cat=${encodeURIComponent(c)}"><span class="fg-cat-icon">${escapeHtml(CATEGORY_ICONS[c]||'✦')}</span><span>${escapeHtml(c)}</span><b>›</b></a>`).join('')}<div class="fg-sidebar-label">Support</div><a href="warranty.html">♢ <span>Warranty</span><b>›</b></a><a href="delivery.html">⌁ <span>Delivery</span><b>›</b></a><a href="contact.html">◎ <span>Contact</span><b>›</b></a></div><div class="fg-sidebar-social"><a data-facebook target="_blank">f</a><a data-instagram target="_blank">◎</a><a class="wa-link" href="#" target="_blank">◉</a></div></aside>`);
+  const head=document.querySelector('.header-main');
+  if(head && !head.querySelector('.fg-menu-trigger')){const b=document.createElement('button');b.className='fg-menu-trigger';b.type='button';b.setAttribute('aria-label','Open menu');b.innerHTML='<span></span><span></span><span></span>';head.insertBefore(b,head.firstChild);b.addEventListener('click',openSidebar)}
+  const close=()=>{const sb=document.querySelector('#fgSidebar'),ov=document.querySelector('#fgSidebarOverlay');sb?.classList.remove('open');sb?.setAttribute('aria-hidden','true');ov?.classList.remove('open');setTimeout(()=>{if(ov)ov.hidden=true},260);document.body.classList.remove('sidebar-open')};
+  window.closeSidebar=close;document.querySelector('[data-sidebar-close]')?.addEventListener('click',close);document.querySelector('#fgSidebarOverlay')?.addEventListener('click',close);
+  document.querySelectorAll('#fgSidebar a').forEach(a=>a.addEventListener('click',close));
+  document.querySelectorAll('#fgSidebar [data-facebook]').forEach(a=>a.href=CONFIG.facebook);
+  document.querySelectorAll('#fgSidebar [data-instagram]').forEach(a=>a.href=CONFIG.instagram);
+  document.querySelectorAll('#fgSidebar .wa-link').forEach(a=>{a.href=wa();a.target='_blank';a.rel='noopener'});
+  function openSidebar(){const sb=document.querySelector('#fgSidebar'),ov=document.querySelector('#fgSidebarOverlay');if(!sb||!ov)return;ov.hidden=false;requestAnimationFrame(()=>{sb.classList.add('open');ov.classList.add('open')});sb.setAttribute('aria-hidden','false');document.body.classList.add('sidebar-open')}
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')close()});
+}
+
 function setupCatalog(products){const catalog=document.querySelector("#catalog");if(!catalog)return;const s=document.querySelector("#catalogSearch"),c=document.querySelector("#category"),sort=document.querySelector("#sort"),params=new URLSearchParams(location.search),q0=params.get("q"),cat0=params.get("cat");if(s&&q0)s.value=q0;
   const cats=[...new Set([...CATEGORY_LIST,...products.map(p=>p.category).filter(Boolean)])];if(c)c.innerHTML=`<option value="All">All Categories</option>`+cats.map(x=>`<option>${escapeHtml(x)}</option>`).join("");if(c&&cat0)c.value=cat0;
   const filter=()=>{const q=(s?.value||"").toLowerCase().trim(),cat=c?.value||"All";let list=products.filter(p=>(cat==="All"||p.category===cat)&&(!q||[p.name,p.category,p.brand,p.description].join(" ").toLowerCase().includes(q)));const mode=sort?.value||"featured";if(mode==="low")list.sort((a,b)=>a.price-b.price);if(mode==="high")list.sort((a,b)=>b.price-a.price);if(mode==="name")list.sort((a,b)=>String(a.name).localeCompare(String(b.name)));if(mode==="featured")list.sort((a,b)=>Number(b.featured)-Number(a.featured));renderProducts(list,"#catalog");const rc=document.querySelector("#resultCount");if(rc)rc.textContent=`${list.length} product${list.length===1?"":"s"}`};
@@ -297,11 +365,21 @@ function setupCatalog(products){const catalog=document.querySelector("#catalog")
 document.addEventListener("DOMContentLoaded",async()=>{
   document.querySelectorAll(".wa-link").forEach(a=>{a.href=wa();a.target="_blank";a.rel="noopener"});
   document.querySelectorAll("[data-facebook]").forEach(a=>a.href=CONFIG.facebook);document.querySelectorAll("[data-instagram]").forEach(a=>a.href=CONFIG.instagram);document.querySelectorAll("#year").forEach(e=>e.textContent=new Date().getFullYear());
-  ensureCartDrawer();updateCartUI();
+  ensureCartDrawer();updateCartUI(); setupSidebar();
+  const earlyParams=new URLSearchParams(location.search);
+  if(document.querySelector('#productDetail')){try{const cachedProduct=JSON.parse(sessionStorage.getItem('fg_open_product')||'null');if(cachedProduct&&String(cachedProduct.id)===String(earlyParams.get('id')))renderProductPage(cachedProduct)}catch{}}
   let currentProducts=[];
-  const apply=data=>{currentProducts=data||[];window.FG_PRODUCTS=currentProducts;buildCategoryMenu(currentProducts);renderCategories(currentProducts);const featured=currentProducts.filter(p=>p.featured);if(document.querySelector("#featured"))renderProducts((featured.length?featured:currentProducts).slice(0,8),"#featured");setupCatalog(currentProducts);setupSearchSuggestions(currentProducts)};
+  const apply=data=>{currentProducts=data||[];window.FG_PRODUCTS=currentProducts;buildCategoryMenu(currentProducts);renderCategories(currentProducts);const featured=currentProducts.filter(p=>p.featured);if(document.querySelector("#featured"))renderProducts((featured.length?featured:currentProducts).slice(0,8),"#featured");setupCatalog(currentProducts);setupSearchSuggestions(currentProducts); window.FG_REFRESH_SUGGESTIONS?.()};
   setupInteractions(currentProducts);
   await loadProductsFast(apply);
   // Rebind catalog after background refresh if necessary
   if(window.FG_PRODUCTS!==currentProducts){setupCatalog(window.FG_PRODUCTS)}
+  const params=new URLSearchParams(location.search);
+  if(document.querySelector('#productDetail')){
+    const id=params.get('id');
+    const findProduct=()=>{const p=(window.FG_PRODUCTS||[]).find(x=>String(x.id)===String(id));if(p)renderProductPage(p);return !!p};
+    if(!findProduct()){try{const cached=JSON.parse(sessionStorage.getItem('fg_open_product')||'null');if(cached&&String(cached.id)===String(id))renderProductPage(cached)}catch{}}
+  }
 });
+
+window.addEventListener('popstate',()=>{const id=new URLSearchParams(location.search).get('id');const p=(window.FG_PRODUCTS||[]).find(x=>String(x.id)===String(id));if(p)renderProductPage(p)});
