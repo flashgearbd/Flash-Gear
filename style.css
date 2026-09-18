@@ -400,35 +400,70 @@ button:active, [role="button"]:active, .clickable:active,
 .fg-cart-toast small { display:block; margin-top:2px; max-width:155px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--muted); font-size:10px; }
 @media (max-width:600px){ .fg-cart-toast{bottom:16px;} }
 
-/* ===== FINAL HERO TOP + HEADER LOGO SPACING ===== */
-.hero::before { display:none !important; content:none !important; }
-.hero-bg {
-  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 88%, rgba(0,0,0,.78) 94%, rgba(0,0,0,.25) 98%, transparent 100%) !important;
-  mask-image: linear-gradient(to bottom, #000 0%, #000 88%, rgba(0,0,0,.78) 94%, rgba(0,0,0,.25) 98%, transparent 100%) !important;
-}
-.brand { display:flex !important; align-items:center !important; height:100% !important; padding-top:6px !important; box-sizing:border-box !important; }
-.brand img { margin-top:0 !important; }
-@media (max-width:700px){
-  .brand { padding-top:8px !important; }
-  .brand img { margin-top:0 !important; }
-}
+/* ===== FLASH GEAR BD — ULTRA PREMIUM MOTION LAYER ===== */
+:root{--ease-premium:cubic-bezier(.22,1,.36,1);--ease-spring:cubic-bezier(.16,1,.3,1)}
+html{scroll-behavior:smooth;-webkit-tap-highlight-color:transparent}
+body{overscroll-behavior-y:none}
+button,a,.clickable,[role="button"],input,select{touch-action:manipulation}
 
-
-/* ===== FINAL MICRO-POLISH: faster perceived loading + smooth UI ===== */
-.suggest-loading{display:flex;align-items:center;justify-content:center;gap:8px;padding:14px;color:var(--muted);font-size:12px}
-.suggest-spinner{width:14px;height:14px;border:2px solid #cfe5f5;border-top-color:#0a8cff;border-radius:50%;animation:fgSpin .65s linear infinite}
-@keyframes fgSpin{to{transform:rotate(360deg)}}
-.search-suggestions{transform-origin:top center;animation:fgSuggestIn 180ms cubic-bezier(.22,1,.36,1) both}
-.search-suggestions[hidden]{animation:none}
-@keyframes fgSuggestIn{from{opacity:0;transform:translateY(-4px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
-.product-modal-dialog,.cart-panel,.category-menu{transition:transform 280ms cubic-bezier(.22,1,.36,1),opacity 220ms ease,box-shadow 280ms ease}
-.product-card,.category-pill,.trust-item,.btn,.cart,.nav a,.category-nav>button,.quick-add,.drawer-close,.modal-close{transition:transform 220ms cubic-bezier(.22,1,.36,1),box-shadow 220ms ease,background-color 220ms ease,border-color 220ms ease,color 180ms ease,opacity 180ms ease}
-.product-card:hover{transform:translateY(-3px);box-shadow:0 16px 34px rgba(17,70,110,.10)}
-.category-pill:hover,.trust-item:hover{transform:translateY(-2px)}
-.btn:active,.cart:active,.quick-add:active,.category-nav>button:active,.nav a:active{transform:scale(.97)}
-img{transition:opacity 220ms ease,transform 320ms cubic-bezier(.22,1,.36,1)}
-.product-card:hover .product-visual img{transform:scale(1.025)}
-/* Upper hero edge must stay completely natural: no top fade/mask. */
+/* Keep the hero edge natural at the TOP; only retain the lower transition. */
 .hero::before{display:none !important}
-.hero-bg{-webkit-mask-image:none !important;mask-image:none !important}
-@media (prefers-reduced-motion:reduce){.suggest-spinner{animation:none}.product-card:hover .product-visual img{transform:none}}
+.hero-bg{-webkit-mask-image:linear-gradient(to bottom,#000 0%,#000 88%,rgba(0,0,0,.86) 94%,rgba(0,0,0,.34) 98%,transparent 100%) !important;mask-image:linear-gradient(to bottom,#000 0%,#000 88%,rgba(0,0,0,.86) 94%,rgba(0,0,0,.34) 98%,transparent 100%) !important}
+
+/* Layered depth and buttery transitions */
+.header{transition:box-shadow .45s var(--ease-premium),background-color .45s ease,border-color .45s ease}
+.header.scrolled{box-shadow:0 10px 30px rgba(10,55,95,.09)}
+.search,.cart,.category-pill,.product-card,.btn,.quick-add,.modal-close,.drawer-close,.suggest-item,.cart-item,.category-menu,.category-nav>button{transition:transform .32s var(--ease-premium),box-shadow .32s var(--ease-premium),border-color .32s ease,background-color .32s ease,color .22s ease,opacity .22s ease}
+.product-card:hover{transform:translate3d(0,-6px,0) scale(1.003)}
+.category-pill:hover{transform:translate3d(0,-3px,0) scale(1.005)}
+.btn:hover{transform:translate3d(0,-2px,0)}
+.btn:active,.cart:active,.quick-add:active,.modal-close:active,.drawer-close:active,.category-nav>button:active{transform:scale(.965)!important}
+.product-card:active,.category-pill:active,.suggest-item:active{transform:scale(.985)!important}
+.search:focus-within{border-color:#8dcef4;box-shadow:0 0 0 4px rgba(10,140,255,.08),0 10px 28px rgba(10,80,130,.08)}
+
+/* Search suggestions: soft lift instead of abrupt appearance */
+.search-suggestions{transform-origin:top center;animation:fgbdSuggestIn .32s var(--ease-premium) both;box-shadow:0 22px 55px rgba(13,65,112,.16)}
+@keyframes fgbdSuggestIn{from{opacity:0;transform:translateY(-7px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
+.suggest-item{transform:translateZ(0)}
+.suggest-item:hover{transform:translateX(2px);box-shadow:inset 3px 0 0 #0a8ff5}
+
+/* Cards enter with a tiny stagger when rendered */
+.product-grid .product-card,.featured-strip .product-card{animation:fgbdCardPremium .55s var(--ease-premium) both;animation-delay:calc(min(var(--i,0),10) * 28ms)}
+@keyframes fgbdCardPremium{from{opacity:0;transform:translate3d(0,14px,0) scale(.985)}to{opacity:1;transform:none}}
+
+/* Product detail / drawer transitions */
+.product-modal-backdrop,.cart-backdrop{transition:opacity .42s var(--ease-premium),backdrop-filter .42s ease}
+.product-modal-dialog{transition:transform .46s var(--ease-premium),opacity .36s ease,box-shadow .46s var(--ease-premium)!important}
+.product-modal.is-open .product-modal-dialog{box-shadow:0 34px 100px rgba(0,32,66,.24)}
+.cart-panel{transition:transform .48s var(--ease-premium),box-shadow .48s var(--ease-premium)!important}
+.cart-drawer.is-open .cart-panel{box-shadow:-28px 0 75px rgba(0,20,50,.18)}
+.modal-product-image img{transition:transform .65s var(--ease-premium),opacity .3s ease}
+.modal-product-image:hover img{transform:scale(1.025)}
+
+/* Premium menu opening */
+.category-menu{transform-origin:top center}
+.category-menu:not([hidden]){animation:fgbdMenuIn .4s var(--ease-premium) both}
+@keyframes fgbdMenuIn{from{opacity:0;transform:translateY(-8px) scale(.985)}to{opacity:1;transform:none}}
+
+/* Image loading feels deliberate instead of popping */
+.product-visual img,.suggest-thumb img,.modal-product-image img{opacity:0;transition:opacity .38s ease,transform .55s var(--ease-premium)}
+.product-visual img[src],.suggest-thumb img[src],.modal-product-image img[src]{opacity:1}
+
+/* Press ripple created by JS below */
+.fgbd-ripple{position:absolute!important;width:10px;height:10px;border-radius:50%;pointer-events:none;background:rgba(10,140,255,.18);transform:translate(-50%,-50%) scale(0);animation:fgbdRipple .52s var(--ease-premium) forwards;z-index:99999}
+@keyframes fgbdRipple{0%{opacity:.65;transform:translate(-50%,-50%) scale(0)}60%{opacity:.22;transform:translate(-50%,-50%) scale(9)}100%{opacity:0;transform:translate(-50%,-50%) scale(12)}}
+.fgbd-touching{transition:none!important;filter:brightness(.985)}
+
+/* Smooth page-change veil for normal internal navigation */
+#fgbdPageVeil{position:fixed;inset:0;background:rgba(247,249,252,.72);backdrop-filter:blur(5px);z-index:30000;pointer-events:none;opacity:0;transition:opacity .24s var(--ease-premium)}
+#fgbdPageVeil.show{opacity:1}
+
+@media (hover:none){
+  .product-card:hover,.category-pill:hover,.btn:hover{transform:none}
+  .product-card:active{box-shadow:0 8px 22px rgba(20,72,120,.10)}
+}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+  #fgbdPageVeil{display:none!important}
+}
