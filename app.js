@@ -60,7 +60,7 @@ const CATEGORY_ICONS = {
 
 const money = n => "৳" + Number(n || 0).toLocaleString("en-BD");
 function escapeHtml(v){return String(v??"").replace(/[&<>'"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;","\"":"&quot;"}[c]));}
-function imageUrl(v){const u=String(v||"").trim();if(!u)return "";const m=u.match(/drive\.google\.com\/(?:uc\?(?:export=[^&]+&)?id=|file\/d\/)([A-Za-z0-9_-]+)/);return m?`https://drive.google.com/uc?export=view&id=${m[1]}`:u;}
+function imageUrl(v){const u=String(v||"").trim();if(!u)return "";let m=u.match(/drive\.google\.com\/(?:uc\?(?:[^#]*?&)?id=|file\/d\/|open\?id=)([A-Za-z0-9_-]+)/);if(!m)m=u.match(/[?&]id=([A-Za-z0-9_-]+)/);return m?`https://drive.google.com/thumbnail?id=${m[1]}&sz=w1200`:u;}
 function wa(name=""){const t=name?`Hello FLASH GEAR BD, I want to order: ${name}`:`Hello FLASH GEAR BD, I want to know about your products.`;return `https://wa.me/${CONFIG.whatsappNumber}?text=${encodeURIComponent(t)}`;}
 function waCart(items){const lines=items.map(i=>`• ${i.name} × ${i.qty} — ${money(i.price*i.qty)}`);const total=items.reduce((s,i)=>s+i.price*i.qty,0);return `https://wa.me/${CONFIG.whatsappNumber}?text=${encodeURIComponent(`Hello FLASH GEAR BD, I want to order:\n${lines.join("\n")}\n\nTotal: ${money(total)}`)}`;}
 
@@ -199,17 +199,49 @@ function setupFeaturedSlider(){
   const track=document.querySelector('#featured'),viewport=track?.parentElement;if(!track||!viewport||track._featuredBound)return;
   track._featuredBound=true;
   const prev=document.querySelector('[data-featured-prev]'),next=document.querySelector('[data-featured-next]');
-  let pos=0,timer=null,paused=false;
+  let pos=0,timer=null,paused=false,dragging=false,startX=0,startPos=0,moved=false;
   const cards=()=>track.querySelectorAll('.product-card');
   const stepWidth=()=>{const card=track.querySelector('.product-card');if(!card)return 0;return card.getBoundingClientRect().width+(parseFloat(getComputedStyle(track).gap)||16)};
   const maxStep=()=>{const n=cards().length;if(!n)return 0;const w=stepWidth();const visible=Math.max(1,Math.floor(viewport.clientWidth/w));return Math.max(0,n-visible)};
-  const move=(dir=1)=>{const w=stepWidth();if(!w)return;const max=maxStep();if(max<=0)return;pos+=dir;if(pos>max)pos=0;if(pos<0)pos=max;track.style.transform=`translate3d(${-pos*w}px,0,0)`};
-  const start=()=>{clearInterval(timer);timer=setInterval(()=>{if(!paused)move(1)},4200)};
+  const applyPos=()=>{const w=stepWidth();track.style.transform=`translate3d(${-pos*w}px,0,0)`};
+  const move=(dir=1)=>{const w=stepWidth();if(!w)return;const max=maxStep();if(max<=0)return;track.style.transition='transform .72s var(--ease-premium)';pos+=dir;if(pos>max)pos=0;if(pos<0)pos=max;applyPos()};
+  const start=()=>{clearInterval(timer);timer=setInterval(()=>{if(!paused&&!dragging)move(1)},4200)};
   const stop=()=>clearInterval(timer);
   prev?.addEventListener('click',()=>{move(-1);start()});next?.addEventListener('click',()=>{move(1);start()});
   viewport.addEventListener('mouseenter',()=>{paused=true});viewport.addEventListener('mouseleave',()=>{paused=false});
-  viewport.addEventListener('touchstart',()=>{paused=true;stop()},{passive:true});viewport.addEventListener('touchend',()=>{paused=false;start()},{passive:true});
-  window.addEventListener('resize',()=>{pos=0;track.style.transform='translate3d(0,0,0)'},{passive:true});
+  // True touch/mouse dragging: swipe the featured rail itself, not only the arrows.
+  const onDown=e=>{
+    if(e.pointerType==='mouse' && e.button!==0)return;
+    dragging=true;moved=false;paused=true;stop();startX=e.clientX;startPos=pos;
+    track.style.transition='none';
+    viewport.setPointerCapture?.(e.pointerId);
+  };
+  const onMove=e=>{
+    if(!dragging)return;
+    const dx=e.clientX-startX;
+    if(Math.abs(dx)>6)moved=true;
+    const w=stepWidth();if(!w)return;
+    const max=maxStep();
+    let raw=startPos-(dx/w);
+    if(raw<0)raw=raw*.18;if(raw>max)raw=max+(raw-max)*.18;
+    pos=raw;track.style.transform=`translate3d(${-pos*w}px,0,0)`;
+  };
+  const onUp=e=>{
+    if(!dragging)return;
+    const dx=e.clientX-startX;dragging=false;track.style.transition='transform .72s var(--ease-premium)';
+    const w=stepWidth();const threshold=Math.max(38,w*.16);
+    if(Math.abs(dx)>=threshold){pos=startPos+(dx<0?1:-1)}else{pos=Math.round(pos)}
+    const max=maxStep();pos=Math.max(0,Math.min(max,pos));applyPos();
+    if(moved)window.FG_SUPPRESS_CARD_CLICK_UNTIL=Date.now()+350;
+    paused=false;start();
+  };
+  viewport.addEventListener('pointerdown',onDown,{passive:true});
+  viewport.addEventListener('pointermove',onMove,{passive:true});
+  viewport.addEventListener('pointerup',onUp,{passive:true});
+  viewport.addEventListener('pointercancel',onUp,{passive:true});
+  viewport.addEventListener('touchstart',stop,{passive:true});
+  viewport.addEventListener('touchend',start,{passive:true});
+  window.addEventListener('resize',()=>{pos=0;track.style.transition='none';applyPos()},{passive:true});
   setTimeout(start,900);
 }
 function productCard(p,index){
@@ -341,6 +373,7 @@ function setupInteractions(products){
     if(e.target.closest("[data-close-cart]")){closeCart();return;}
     if(e.target.closest("[data-close-modal]")){closeProductModal();return;}
     const card=e.target.closest(".product-card");
+    if(Date.now() < (window.FG_SUPPRESS_CARD_CLICK_UNTIL||0)) return;
     if(card&&!e.target.closest("a,button,input,select")){
       const p=card.parentElement?._products?.[Number(card.dataset.productIndex)];
       if(p)openProductPage(p);
@@ -412,11 +445,29 @@ function setupSidebar(){
   document.addEventListener('keydown',e=>{if(e.key==='Escape')close()});
 }
 
-function setupCatalog(products){const catalog=document.querySelector("#catalog");if(!catalog)return;const s=document.querySelector("#catalogSearch"),c=document.querySelector("#category"),sort=document.querySelector("#sort"),params=new URLSearchParams(location.search),q0=params.get("q"),cat0=params.get("cat");if(s&&q0)s.value=q0;
-  const cats=[...new Set([...CATEGORY_LIST,...products.map(p=>p.category).filter(Boolean)])];if(c)c.innerHTML=`<option value="All">All Categories</option>`+cats.map(x=>`<option>${escapeHtml(x)}</option>`).join("");if(c&&cat0)c.value=cat0;
-  const catalogNames={"Mobile Phones":"Smartphone","Feature Phone":"Feature Phone"};const title=document.querySelector("#catalogTitle"),intro=document.querySelector("#catalogIntro"),kicker=document.querySelector("#catalogKicker");if(cat0){const display=catalogNames[cat0]||cat0;if(title)title.textContent=display;if(kicker)kicker.textContent="FLASH GEAR BD · "+display.toUpperCase();if(intro)intro.textContent=`Browse ${display} products, compare prices and open any product for full specifications, warranty and ordering options.`;}
-  const filter=()=>{const q=(s?.value||"").toLowerCase().trim(),cat=c?.value||"All";let list=products.filter(p=>(cat==="All"||p.category===cat)&&(!q||[p.name,p.category,p.brand,p.description].join(" ").toLowerCase().includes(q)));const mode=sort?.value||"featured";if(mode==="low")list.sort((a,b)=>a.price-b.price);if(mode==="high")list.sort((a,b)=>b.price-a.price);if(mode==="name")list.sort((a,b)=>String(a.name).localeCompare(String(b.name)));if(mode==="featured")list.sort((a,b)=>Number(b.featured)-Number(a.featured));renderProducts(list,"#catalog");const rc=document.querySelector("#resultCount");if(rc)rc.textContent=`${list.length} product${list.length===1?"":"s"}`};
-  s?.addEventListener("input",filter);c?.addEventListener("change",filter);sort?.addEventListener("change",filter);filter();
+function setupCatalog(products){
+  const catalog=document.querySelector('#catalog');if(!catalog)return;
+  const s=document.querySelector('#catalogSearch'),c=document.querySelector('#category'),sort=document.querySelector('#sort');
+  const params=new URLSearchParams(location.search),q0=params.get('q')||'',cat0=params.get('cat')||'';
+  if(s&&q0)s.value=q0;
+  const cats=[...new Set([...CATEGORY_LIST,...products.map(p=>p.category).filter(Boolean)])];
+  if(c)c.innerHTML=`<option value="All">All Categories</option>`+cats.map(x=>`<option>${escapeHtml(x)}</option>`).join('');
+  if(c&&cat0)c.value=cat0;
+  const catalogNames={'Mobile Phones':'Smartphone','Feature Phone':'Feature Phone'};
+  const title=document.querySelector('#catalogTitle'),intro=document.querySelector('#catalogIntro'),kicker=document.querySelector('#catalogKicker');
+  if(cat0){const display=catalogNames[cat0]||cat0;if(title)title.textContent=display;if(kicker)kicker.textContent='FLASH GEAR BD · '+display.toUpperCase();if(intro)intro.textContent=`Browse ${display} products, compare prices and open any product for full specifications, warranty and ordering options.`;}
+  const filter=()=>{
+    const q=(s?.value||q0).toLowerCase().trim(),cat=c?.value||cat0||'All';
+    let list=products.filter(p=>(cat==='All'||String(p.category)===String(cat))&&(!q||[p.name,p.category,p.brand,p.description].join(' ').toLowerCase().includes(q)));
+    const mode=sort?.value||'featured';
+    if(mode==='low')list.sort((a,b)=>a.price-b.price);
+    if(mode==='high')list.sort((a,b)=>b.price-a.price);
+    if(mode==='name')list.sort((a,b)=>String(a.name).localeCompare(String(b.name)));
+    if(mode==='featured')list.sort((a,b)=>Number(b.featured)-Number(a.featured));
+    renderProducts(list,'#catalog');
+    const rc=document.querySelector('#resultCount');if(rc)rc.textContent=`${list.length} product${list.length===1?'':'s'}`;
+  };
+  s?.addEventListener('input',filter);c?.addEventListener('change',filter);sort?.addEventListener('change',filter);filter();
 }
 
 document.addEventListener("DOMContentLoaded",async()=>{
