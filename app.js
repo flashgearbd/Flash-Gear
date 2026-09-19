@@ -23,7 +23,7 @@
 })();
 
 const CONFIG = {
-  productsApiUrl: "https://script.google.com/macros/s/AKfycbyRvlz1Dhm6vyQHk554YZ_8k-jfkpPgbmtSuh2WqWuKRScDI49yWVt1E6xYMWNKlSg9/exec",
+  productsApiUrl: "https://script.google.com/macros/s/AKfycbzCpbkkiI71eYs1GKhCtCyWLNuN6KyHfDHCuJo9gV97UV2MhUPn0yCvka4IrOmLSQTO/exec",
   whatsappNumber: "8801601093553",
   facebook: "https://www.facebook.com/share/1HyzxwuCR8/",
   instagram: "https://www.instagram.com/flashgearbd/",
@@ -48,11 +48,11 @@ const CATEGORY_ICONS = {
 const money = n => "৳" + Number(n || 0).toLocaleString("en-BD");
 function escapeHtml(v){return String(v??"").replace(/[&<>'"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;","\"":"&quot;"}[c]));}
 function driveId(v){const u=String(v||'').trim();const m=u.match(/drive\.google\.com\/(?:uc\?(?:[^#]*?&)?id=|file\/d\/|open\?id=)([A-Za-z0-9_-]+)/)||u.match(/[?&]id=([A-Za-z0-9_-]+)/);return m?m[1]:'';}
-function imageUrl(v){const u=String(v||'').trim();if(!u)return '';const id=driveId(u);if(id){if(CONFIG.imageCdnBase)return CONFIG.imageCdnBase.replace(/\/$/,'')+'/'+encodeURIComponent(id);return `https://drive.google.com/thumbnail?id=${id}&sz=w1600`;}return u;}
+function imageUrl(v){const u=String(v||'').trim();if(!u)return '';const id=driveId(u);if(id){if(CONFIG.imageCdnBase)return CONFIG.imageCdnBase.replace(/\/$/,'')+'/'+encodeURIComponent(id);return `https://drive.google.com/thumbnail?id=${id}&sz=w900`;}return u;}
 function imageRetryAttrs(raw){const original=String(raw||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;');const id=driveId(raw);const primary=imageUrl(raw).replace(/&/g,'&amp;').replace(/"/g,'&quot;');return `data-original-src="${original}" data-drive-id="${id}" data-retry-src="${primary}" onerror="fgImageRetry(this)"`;}
 function fgImageRetry(img){if(!img||img.dataset.retryDone==='1')return;img.dataset.retryDone='1';const id=img.dataset.driveId||driveId(img.dataset.originalSrc||'');if(id){img.src=`https://drive.google.com/uc?export=view&id=${id}`;img.onerror=()=>{img.onerror=null;const ph=img.nextElementSibling;if(ph)ph.hidden=false;img.classList.add('img-broken');};return;}const original=img.dataset.originalSrc||'';if(original&&img.src!==original){img.src=original;return;}img.classList.add('img-broken');const ph=img.nextElementSibling;if(ph)ph.hidden=false;}
 function wa(name=""){const t=name?`Hello FLASH GEAR BD, I want to order: ${name}`:`Hello FLASH GEAR BD, I want to know about your products.`;return `https://wa.me/${CONFIG.whatsappNumber}?text=${encodeURIComponent(t)}`;}
-function buildWaOrder(items, customer={}){const lines=items.map(i=>`• ${i.name} × ${i.qty} — ${money(i.price*i.qty)}`);const subtotal=items.reduce((s,i)=>s+i.price*i.qty,0);const fee=Number(customer.deliveryFee||0);const total=subtotal+fee;const details=[customer.name&&`Name: ${customer.name}`,customer.phone&&`Phone: ${customer.phone}`,customer.address&&`Address: ${customer.address}`,customer.deliveryArea&&`Delivery Area: ${customer.deliveryArea}`,customer.payment&&`Payment: ${customer.payment}`,customer.transactionId&&`Transaction ID: ${customer.transactionId}`].filter(Boolean);return `Hello FLASH GEAR BD, I want to confirm my order:\n${lines.join("\n")}\n\nSubtotal: ${money(subtotal)}\nDelivery: ${money(fee)}\nTotal: ${money(total)}${details.length?'\n\n'+details.join('\n'):''}`;}
+function buildWaOrder(items, customer={}){const lines=items.map(i=>`• ${i.name} × ${i.qty} — ${money(i.price*i.qty)}`);const subtotal=items.reduce((s,i)=>s+i.price*i.qty,0);const fee=Number(customer.deliveryFee||0);const total=subtotal+fee;const details=[customer.name&&`Name: ${customer.name}`,customer.phone&&`Phone: ${customer.phone}`,customer.address&&`Address: ${customer.address}`,customer.deliveryArea&&`Delivery Area: ${customer.deliveryArea}`,customer.payment&&`Payment: ${customer.payment}`,customer.transactionId&&`Transaction ID: ${customer.transactionId}`,customer.orderRef&&`Order Reference: ${customer.orderRef}`].filter(Boolean);return `Hello FLASH GEAR BD, I want to confirm my order:\n${lines.join("\n")}\n\nSubtotal: ${money(subtotal)}\nDelivery: ${money(fee)}\nTotal: ${money(total)}${details.length?'\n\n'+details.join('\n'):''}`;}
 function waCart(items,customer={}){return `https://wa.me/${CONFIG.whatsappNumber}?text=${encodeURIComponent(buildWaOrder(items,customer))}`;}
 async function syncCartPrices(timeoutMs=2500){
   const current=getCart();
@@ -70,7 +70,8 @@ async function syncCartPrices(timeoutMs=2500){
 
 function getCart(){try{return JSON.parse(localStorage.getItem("fg_cart")||"[]")}catch{return []}}
 function saveCart(c){localStorage.setItem("fg_cart",JSON.stringify(c));updateCartUI()}
-function addToCart(p,qty=1,sourceEl=null){const c=getCart(),x=c.find(i=>i.id===p.id);qty=Math.max(1,Number(qty)||1);if(x)x.qty+=qty;else c.push({id:p.id,name:p.name,price:Number(p.price||0),qty});saveCart(c);flyToCart(sourceEl);showCartAddedToast(p)}
+function stockQty(v){const t=String(v||" ").trim().toLowerCase();if(!t||t==="in stock"||t==="available")return Infinity;if(t==="out of stock"||t==="unavailable"||t==="sold out")return 0;const m=t.match(/\d+/);return m?Number(m[0]):Infinity}
+function addToCart(p,qty=1,sourceEl=null){const max=stockQty(p?.stock);if(max===0){showCheckoutError("This product is out of stock.");return;}const c=getCart(),x=c.find(i=>i.id===p.id);qty=Math.max(1,Number(qty)||1);const next=(x?Number(x.qty||0):0)+qty;if(max>0&&next>max){showCheckoutError(`Only ${max} available.`);return;}if(x){x.qty=next;x.stock=p.stock;}else c.push({id:p.id,name:p.name,price:Number(p.price||0),mrp:Number(p.mrp||0),qty,stock:p.stock,image:p.image,brand:p.brand});saveCart(c);flyToCart(sourceEl);showCartAddedToast(p)}
 function flyToCart(source){try{const img=source?.closest?.('.product-card,.detail-summary')?.querySelector?.('img')||document.querySelector('.detail-main-image');const cart=document.querySelector('[data-cart-open]');if(!img||!cart)return;const a=img.getBoundingClientRect(),b=cart.getBoundingClientRect();const clone=img.cloneNode(true);clone.className='fg-fly-img';clone.style.cssText=`left:${a.left}px;top:${a.top}px;width:${Math.min(96,a.width)}px;height:${Math.min(96,a.height)}px`;document.body.appendChild(clone);requestAnimationFrame(()=>{clone.style.transform=`translate(${b.left-a.left+b.width/2-Math.min(96,a.width)/2}px,${b.top-a.top+b.height/2-Math.min(96,a.height)/2}px) scale(.18)`;clone.style.opacity='0';});setTimeout(()=>clone.remove(),520)}catch{}}
 function getRecentViewed(){try{return JSON.parse(localStorage.getItem('fg_recent_viewed')||'[]')}catch{return []}}
 function rememberViewed(p){if(!p?.id)return;const list=getRecentViewed().filter(x=>String(x.id)!==String(p.id));list.unshift({id:p.id,name:p.name,price:p.price,mrp:p.mrp,stock:p.stock,brand:p.brand,category:p.category,image:p.image,featured:p.featured,color:p.color});localStorage.setItem('fg_recent_viewed',JSON.stringify(list.slice(0,10)));}
@@ -89,7 +90,7 @@ function showCartAddedToast(p){
   clearTimeout(window.FG_CART_TOAST_TIMER); window.FG_CART_TOAST_TIMER=setTimeout(()=>t.classList.remove("show"),1800);
 }
 function removeFromCart(id){saveCart(getCart().filter(i=>i.id!==id));openCart()}
-function changeQty(id,d){const c=getCart(),x=c.find(i=>i.id===id);if(!x)return;x.qty+=d;if(x.qty<=0)return removeFromCart(id);saveCart(c);openCart()}
+function changeQty(id,d){const c=getCart(),x=c.find(i=>i.id===id);if(!x)return;if(d>0){const max=stockQty(x.stock);if(max>0&&Number(x.qty||0)>=max){showCheckoutError(`Only ${max} available.`);return;}}x.qty+=d;if(x.qty<=0)return removeFromCart(id);saveCart(c);openCart()}
 function clearCartAfterOrder(){localStorage.removeItem('fg_cart');['#checkoutName','#checkoutPhone','#checkoutAddress','#checkoutArea','#checkoutPayment','#checkoutTransaction'].forEach(sel=>{const el=document.querySelector(sel);if(el){if(el.tagName==='SELECT')el.selectedIndex=0;else el.value='';el.classList.remove('fg-phone-invalid','fg-input-error');}});const msg=document.querySelector('#checkoutPhoneError');if(msg){msg.hidden=true;msg.textContent='';}updateCartUI();updateCheckoutButtonState();}
 function updateCartUI(){
   const c=getCart(),count=c.reduce((s,i)=>s+i.qty,0),subtotal=c.reduce((s,i)=>s+i.price*i.qty,0),fee=checkoutDeliveryFee(),total=subtotal+(c.length?fee:0);
@@ -294,7 +295,7 @@ function productCard(p,index){
 function renderProducts(list,id){const el=document.querySelector(id);if(!el)return;el._products=list;el.innerHTML=list.length?list.map((p,i)=>productCard(p,i)).join(""):`<div class="no-results"><div>⌕</div><h3>No products found</h3><p>Try another category or search.</p></div>`}
 
 function normalizeApiPayload(payload){if(Array.isArray(payload))return {products:payload,announcement:''};if(payload&&Array.isArray(payload.products))return {products:payload.products,announcement:String(payload.announcement||'')};return {products:[],announcement:''};}
-const CACHE_KEY="fg_products_cache_v6", CACHE_TTL=30*60*1000;
+const CACHE_KEY="fg_products_cache_v7", CACHE_TTL=10*60*1000;
 function readCachedProducts(){try{const x=JSON.parse(localStorage.getItem(CACHE_KEY)||"null");if(x&&Array.isArray(x.data)&&Number(x.time)>0){if(Date.now()-Number(x.time)<CACHE_TTL)return x.data;localStorage.removeItem(CACHE_KEY)}}catch{}return null}
 function writeCachedProducts(data){try{localStorage.setItem(CACHE_KEY,JSON.stringify({time:Date.now(),data}))}catch{}}
 async function fetchProducts(){
@@ -450,8 +451,9 @@ function setupInteractions(products){
       // Build the order immediately so checkout never waits on the network.
       // A fresh price sync continues in the background when possible.
       if(current.length){
-        const immediateUrl=waCart(current,customer);
-        try{fetch(CONFIG.productsApiUrl,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({type:"order",name,phone,address,deliveryArea:area,payment,transactionId,deliveryFee,subtotal:current.reduce((a,i)=>a+i.price*i.qty,0),total:current.reduce((a,i)=>a+i.price*i.qty,0)+deliveryFee,items:current}),keepalive:true,mode:"no-cors"}).catch(()=>{});}catch{}
+        const orderRef=`FG-${new Date().toISOString().slice(2,10).replace(/-/g,'')}-${Math.random().toString(36).slice(2,7).toUpperCase()}`;
+        const immediateUrl=waCart(current,{...customer,orderRef});
+        try{fetch(CONFIG.productsApiUrl,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({action:"createOrder",orderRef:orderRef,customerName:name,phone:phone,address:address,deliveryArea:area,payment:payment,transactionId:transactionId,items:current.map(i=>({id:i.id,quantity:Number(i.qty||1)}))}),keepalive:true}).catch(()=>{});}catch{}
         clearCartAfterOrder();
         window.location.assign(immediateUrl);
         syncCartPrices(1200).catch(()=>{});
@@ -565,7 +567,10 @@ function setupCatalog(products){
   s?.addEventListener('input',filter);c?.addEventListener('change',filter);sort?.addEventListener('change',filter);filter();
 }
 
+function setupPremiumMobileNav(){if(document.querySelector('#fgMobileNav'))return;const path=location.pathname.toLowerCase();const active=path.includes('products')||path.includes('product.html')?'products':path.includes('contact')?'contact':'home';document.body.insertAdjacentHTML('beforeend',`<nav id="fgMobileNav" class="fg-mobile-nav" aria-label="Mobile navigation"><a class="${active==='home'?'is-active':''}" href="index.html"><span>⌂</span><small>Home</small></a><a class="${active==='products'?'is-active':''}" href="products.html"><span>▦</span><small>Shop</small></a><button type="button" data-cart-open><span>🛒<b data-cart-count>0</b></span><small>Cart</small></button><a class="${active==='contact'?'is-active':''}" href="contact.html"><span>◌</span><small>Support</small></a></nav>`)}
+
 document.addEventListener("DOMContentLoaded",async()=>{
+  setupPremiumMobileNav();
   document.querySelectorAll(".wa-link").forEach(a=>{a.href=wa();a.target="_blank";a.rel="noopener"});
   document.querySelectorAll("[data-facebook]").forEach(a=>a.href=CONFIG.facebook);document.querySelectorAll("[data-instagram]").forEach(a=>a.href=CONFIG.instagram);document.querySelectorAll("#year").forEach(e=>e.textContent=new Date().getFullYear());
   ensureCartDrawer();updateCartUI(); setupSidebar(); setupMobileBottomNav(); setupAnnouncement(); setActiveNav(); loadAnnouncement();

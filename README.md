@@ -31,3 +31,6 @@ The Product Manager is protected by the PIN in Apps Script. Keep the manager URL
 
 ### Editable announcement
 Create an optional Google Sheet tab named `Settings` with columns `Key` and `Value`. Add a row with `Announcement` in column A and the announcement text in column B. The website reads it from the Apps Script API.
+
+## V7 Premium Upgrade
+See `README_V7.md` for the V7 changes and required Apps Script PIN setup.
