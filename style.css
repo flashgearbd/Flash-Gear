@@ -640,3 +640,29 @@ h1,h2,h3,h4,h5,h6,.brand,.section-head h2,.catalog-hero h1{font-family:"Space Gr
 .product-card,.similar-card,.home-shop-card{backface-visibility:hidden;transform:translateZ(0);}
 .product-card-link,.similar-link{display:block;min-width:0;}
 @media(prefers-reduced-motion:reduce){.similar-track{transition:none!important}.fg-checkout-error{transition:none!important}.product-card,.similar-card{animation:none!important;}}
+
+
+/* ===== PREMIUM CONTRAST + MOTION POLISH ===== */
+.discount-badge,.featured-badge,.quick-add:not(:disabled){
+  color:#fff !important;
+  -webkit-text-fill-color:#fff !important;
+  text-shadow:0 1px 1px rgba(0,45,90,.18);
+  border:1px solid rgba(255,255,255,.18);
+}
+.discount-badge,.featured-badge{font-weight:900;box-shadow:0 8px 18px rgba(10,140,255,.16);}
+.quick-add:not(:disabled){box-shadow:0 8px 18px rgba(10,140,255,.18);}
+.product-card{contain:layout paint;}
+.product-card .product-visual{isolation:isolate;}
+.product-card .product-visual img{will-change:transform,opacity;}
+@media(max-width:700px){
+  .discount-badge,.featured-badge{font-size:10px!important;padding:7px 9px!important;}
+  .quick-add{font-size:10px!important;min-height:34px!important;padding:0 12px!important;}
+}
+/* Premium checkout validation */
+.fg-phone-error{margin:-2px 4px 2px;color:#dc2626;font-size:12px;font-weight:800;line-height:1.35;animation:fgErrorIn .22s ease both}
+#checkoutPhone.fg-phone-invalid{border-color:#ef4444!important;box-shadow:0 0 0 3px rgba(239,68,68,.12)!important;background:#fffafa}
+#cartCheckout:disabled{opacity:.48!important;filter:saturate(.65);cursor:not-allowed!important;box-shadow:none!important}
+#cartCheckout:not(:disabled){opacity:1;cursor:pointer}
+.sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+@keyframes fgErrorIn{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.fg-phone-error{animation:none}}
