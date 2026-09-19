@@ -16,7 +16,7 @@ This version adds a phone-friendly Product Manager to the existing Google Sheets
 1. Open your existing Apps Script project attached to the Products spreadsheet.
 2. Replace the old `google-apps-script.gs` code with the new code in this package.
 3. Add a new Apps Script HTML file named exactly `product-manager` and paste the contents of `product-manager.html`.
-4. Change `ADMIN_PIN = '2580'` in the script to your own private PIN.
+4. The Apps Script manager now uses a strong numeric PIN. Keep the manager URL and PIN private. The current PIN is supplied separately with this build.
 5. Deploy the Web App again as the same deployment: Execute as **Me**, Who has access **Anyone**.
 6. Open your existing `/exec` URL followed by `?admin=1` to open the mobile Product Manager.
 
@@ -27,3 +27,7 @@ Product ID, Product Name, Category, Brand, Price, MRP, Stock, Warranty, Image UR
 
 ## Important
 The Product Manager is protected by the PIN in Apps Script. Keep the manager URL and PIN private. Google Drive sharing is set to Anyone with the link so the public website can display uploaded product images.
+
+
+### Editable announcement
+Create an optional Google Sheet tab named `Settings` with columns `Key` and `Value`. Add a row with `Announcement` in column A and the announcement text in column B. The website reads it from the Apps Script API.
