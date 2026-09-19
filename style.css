@@ -666,3 +666,45 @@ h1,h2,h3,h4,h5,h6,.brand,.section-head h2,.catalog-hero h1{font-family:"Space Gr
 .sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
 @keyframes fgErrorIn{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:none}}
 @media(prefers-reduced-motion:reduce){.fg-phone-error{animation:none}}
+
+/* ===== TARGETED FINAL FIX: product media + checkout address ===== */
+.product-card .product-visual,
+.similar-image,
+.detail-image-shell{
+  background:var(--bg) !important;
+}
+.product-card .product-visual img,
+.similar-image img,
+.detail-main-image{
+  background:transparent !important;
+  mix-blend-mode:multiply;
+  object-fit:contain !important;
+  object-position:center center !important;
+}
+.product-card .product-visual{
+  height:205px !important;
+  min-height:205px !important;
+  max-height:205px !important;
+  padding:18px !important;
+  overflow:hidden !important;
+}
+.similar-image{
+  padding:16px !important;
+  overflow:hidden !important;
+}
+.detail-image-shell{
+  padding:22px !important;
+}
+.cart-checkout-form input#checkoutAddress{
+  min-height:44px;
+}
+@media(max-width:700px){
+  .product-card .product-visual{
+    height:185px !important;
+    min-height:185px !important;
+    max-height:185px !important;
+    padding:14px !important;
+  }
+  .similar-image{padding:12px !important;}
+  .detail-image-shell{padding:18px !important;}
+}
