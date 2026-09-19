@@ -1,36 +1,22 @@
 
-/* FLASH GEAR BD — premium touch interaction layer */
+/* FLASH GEAR BD — lightweight premium touch layer */
 (function(){
-  const interactive='button,a,[role="button"],.clickable,.product-card,.category-pill,.suggest-item,.cart-item';
-  let lastPointer=0;
-  function ripple(target,x,y){
-    if(!target || target.closest?.('input,textarea,select')) return;
-    const cs=getComputedStyle(target);
-    if(cs.position==='static') target.style.position='relative';
-    if(cs.overflow==='visible') target.style.overflow='hidden';
-    const r=document.createElement('span');r.className='fgbd-ripple';
-    const rect=target.getBoundingClientRect();
-    r.style.left=(x-rect.left)+'px';r.style.top=(y-rect.top)+'px';
-    target.appendChild(r);setTimeout(()=>r.remove(),560);
-  }
-  document.addEventListener('pointerdown',e=>{
-    if(e.pointerType==='mouse' && e.button!==0)return;
-    const t=e.target.closest?.(interactive);if(!t)return;
-    lastPointer=Date.now();t.classList.add('fgbd-touching');
-    ripple(t,e.clientX,e.clientY);
-  },{passive:true});
+  const interactive='button,a,[role="button"],.clickable,.category-pill,.suggest-item,.cart-item';
   const clear=e=>{const t=e.target?.closest?.(interactive);if(t)t.classList.remove('fgbd-touching')};
+  document.addEventListener('pointerdown',e=>{
+    if(e.pointerType==='mouse'&&e.button!==0)return;
+    const t=e.target.closest?.(interactive);if(!t)return;
+    t.classList.add('fgbd-touching');
+  },{passive:true});
   document.addEventListener('pointerup',clear,{passive:true});
   document.addEventListener('pointercancel',clear,{passive:true});
-  document.addEventListener('pointerleave',clear,{passive:true});
-  // Keep keyboard activation polished without fighting navigation.
+  document.addEventListener('pointerout',e=>{if(e.relatedTarget)clear(e)},{passive:true});
   document.addEventListener('keydown',e=>{
     if(e.key!=='Enter'&&e.key!==' ')return;
     const t=e.target.closest?.(interactive);if(!t)return;
     t.classList.add('fgbd-touching');
-    setTimeout(()=>t.classList.remove('fgbd-touching'),130);
+    setTimeout(()=>t.classList.remove('fgbd-touching'),110);
   });
-  // Gentle header elevation after scrolling.
   let ticking=false;
   const update=()=>{document.querySelector('.header')?.classList.toggle('scrolled',window.scrollY>8);ticking=false};
   window.addEventListener('scroll',()=>{if(!ticking){ticking=true;requestAnimationFrame(update)}},{passive:true});
@@ -60,9 +46,10 @@ const CATEGORY_ICONS = {
 
 const money = n => "৳" + Number(n || 0).toLocaleString("en-BD");
 function escapeHtml(v){return String(v??"").replace(/[&<>'"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;","\"":"&quot;"}[c]));}
-function imageUrl(v){const u=String(v||"").trim();if(!u)return "";let m=u.match(/drive\.google\.com\/(?:uc\?(?:[^#]*?&)?id=|file\/d\/|open\?id=)([A-Za-z0-9_-]+)/);if(!m)m=u.match(/[?&]id=([A-Za-z0-9_-]+)/);return m?`https://drive.google.com/thumbnail?id=${m[1]}&sz=w1000`:u;}
-function imageRetryAttrs(raw){const original=String(raw||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;');const primary=imageUrl(raw).replace(/&/g,'&amp;').replace(/"/g,'&quot;');return `data-original-src="${original}" data-retry-src="${primary}" onerror="fgImageRetry(this)"`;}
-function fgImageRetry(img){if(!img)return;const original=img.dataset.originalSrc||'';const id=(original.match(/(?:[?&]id=|file\/d\/|open\?id=)([A-Za-z0-9_-]+)/)||[])[1];const tries=Number(img.dataset.retryDone||'0');img.dataset.retryDone=String(tries+1);const variants=[img.dataset.retrySrc||'',id?`https://drive.google.com/thumbnail?id=${id}&sz=w900`:'' ,id?`https://drive.google.com/uc?export=view&id=${id}`:'',original].filter(Boolean);const next=variants[tries];if(next){img.src=next;return;}img.classList.add('img-broken');img.setAttribute('aria-hidden','true');const ph=img.nextElementSibling;if(ph)ph.hidden=false;}
+function driveId(v){const u=String(v||'').trim();const m=u.match(/drive\.google\.com\/(?:uc\?(?:[^#]*?&)?id=|file\/d\/|open\?id=)([A-Za-z0-9_-]+)/)||u.match(/[?&]id=([A-Za-z0-9_-]+)/);return m?m[1]:'';}
+function imageUrl(v){const u=String(v||'').trim();if(!u)return '';const id=driveId(u);return id?`https://drive.google.com/thumbnail?id=${id}&sz=w1600`:u;}
+function imageRetryAttrs(raw){const original=String(raw||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;');const id=driveId(raw);const primary=imageUrl(raw).replace(/&/g,'&amp;').replace(/"/g,'&quot;');return `data-original-src="${original}" data-drive-id="${id}" data-retry-src="${primary}" onerror="fgImageRetry(this)"`;}
+function fgImageRetry(img){if(!img||img.dataset.retryDone==='1')return;img.dataset.retryDone='1';const id=img.dataset.driveId||driveId(img.dataset.originalSrc||'');if(id){img.src=`https://drive.google.com/uc?export=view&id=${id}`;img.onerror=()=>{img.onerror=null;const ph=img.nextElementSibling;if(ph)ph.hidden=false;img.classList.add('img-broken');};return;}const original=img.dataset.originalSrc||'';if(original&&img.src!==original){img.src=original;return;}img.classList.add('img-broken');const ph=img.nextElementSibling;if(ph)ph.hidden=false;}
 function wa(name=""){const t=name?`Hello FLASH GEAR BD, I want to order: ${name}`:`Hello FLASH GEAR BD, I want to know about your products.`;return `https://wa.me/${CONFIG.whatsappNumber}?text=${encodeURIComponent(t)}`;}
 function buildWaOrder(items, customer={}){const lines=items.map(i=>`• ${i.name} × ${i.qty} — ${money(i.price*i.qty)}`);const subtotal=items.reduce((s,i)=>s+i.price*i.qty,0);const details=[customer.name&&`Name: ${customer.name}`,customer.phone&&`Phone: ${customer.phone}`,customer.address&&`Address: ${customer.address}`,customer.payment&&`Payment: ${customer.payment}`].filter(Boolean);return `Hello FLASH GEAR BD, I want to confirm my order:\n${lines.join("\n")}\n\nSubtotal: ${money(subtotal)}${details.length?'\n\n'+details.join('\n'):''}`;}
 function waCart(items,customer={}){return `https://wa.me/${CONFIG.whatsappNumber}?text=${encodeURIComponent(buildWaOrder(items,customer))}`;}
@@ -155,7 +142,7 @@ function renderProductPage(p){
         ${p.brand?`<div class="detail-brand">${escapeHtml(p.brand)}</div>`:''}
         <div class="detail-price">${money(price)} ${mrp>price?`<del>${money(mrp)}</del><span class="save-pill">-${discount}%</span>`:''}</div>
         <div class="detail-stock"><span></span>${escapeHtml(p.stock||'In Stock')}</div>
-        <div class="detail-meta">${p.brand?`<div><span>Brand</span><strong>${escapeHtml(p.brand)}</strong></div>`:''}<div><span>Category</span><strong>${escapeHtml(p.category||'Gadgets')}</strong></div>${p.color?`<div><span>Colour</span><strong>${escapeHtml(p.color)}</strong></div>`:''}${p.warranty?`<div><span>Warranty</span><strong>${escapeHtml(p.warranty)}</strong></div>`:''}</div>
+        <div class="detail-meta">${p.brand?`<div><span>Brand</span><strong>${escapeHtml(p.brand)}</strong></div>`:''}<div><span>Category</span><strong>${escapeHtml(p.category||'Gadgets')}</strong></div>${String(p.color||'').trim()?`<div class="detail-colour-row"><span>Colour</span><strong><i class="colour-dot" aria-hidden="true"></i>${escapeHtml(String(p.color).trim())}</strong></div>`:''}${p.warranty?`<div><span>Warranty</span><strong>${escapeHtml(p.warranty)}</strong></div>`:''}</div>
         <div class="detail-qty"><button type="button" data-detail-minus aria-label="Decrease quantity">−</button><input id="detailQty" value="1" inputmode="numeric" aria-label="Quantity"><button type="button" data-detail-plus aria-label="Increase quantity">+</button></div><div class="detail-actions"><button class="btn btn-blue btn-large" data-add-product="${escapeHtml(p.id)}" ${String(p.stock).toLowerCase()==='out of stock'?'disabled':''}>Add to Cart</button><button class="btn btn-soft btn-large" data-buy-now="${escapeHtml(p.id)}" ${String(p.stock).toLowerCase()==='out of stock'?'disabled':''}>Buy Now</button></div><a class="detail-wa-link" href="${wa(p.name)}" target="_blank" rel="noopener">WhatsApp Order</a>
         <div class="detail-benefits"><span><i class="fa-solid fa-shield-halved" aria-hidden="true"></i> Original</span><span>↻ Warranty</span><span><i class="fa-solid fa-truck-fast" aria-hidden="true"></i> Delivery</span><span><i class="fa-brands fa-whatsapp" aria-hidden="true"></i> Support</span></div>
       </section>
@@ -573,11 +560,12 @@ document.addEventListener("DOMContentLoaded",async()=>{
   const earlyParams=new URLSearchParams(location.search);
   if(document.querySelector('#productDetail')){try{const fastRaw=sessionStorage.getItem('fg_open_product')||localStorage.getItem('fg_open_product_fast')||'';const cachedProduct=JSON.parse(fastRaw||'null');if(cachedProduct&&String(cachedProduct.id)===String(earlyParams.get('id')))renderProductPage(cachedProduct)}catch{}}
   let currentProducts=[];
-  const apply=data=>{currentProducts=data||[];window.FG_PRODUCTS=currentProducts;document.querySelectorAll("#fgSidebar [data-category]").forEach(a=>{a.style.display=currentProducts.some(p=>String(p.category)===String(a.dataset.category))?"":"none"});buildCategoryMenu(currentProducts);renderCategories(currentProducts);renderHomeRows(currentProducts);const featured=currentProducts.filter(p=>p.featured);if(document.querySelector("#featured"))renderFeaturedProducts((featured.length?featured:currentProducts).slice(0,10));setupCatalog(currentProducts);setupSearchSuggestions(currentProducts); window.FG_REFRESH_SUGGESTIONS?.();};
+  const apply=data=>{currentProducts=(Array.isArray(data)?data:[]).map(p=>({...p,color:String(p?.color??p?.colour??p?.Colour??p?.Color??'').trim()}));window.FG_PRODUCTS=currentProducts;document.querySelectorAll("#fgSidebar [data-category]").forEach(a=>{a.style.display=currentProducts.some(p=>String(p.category)===String(a.dataset.category))?"":"none"});buildCategoryMenu(currentProducts);renderCategories(currentProducts);renderHomeRows(currentProducts);const featured=currentProducts.filter(p=>p.featured);if(document.querySelector("#featured"))renderFeaturedProducts((featured.length?featured:currentProducts).slice(0,10));setupCatalog(currentProducts);setupSearchSuggestions(currentProducts); window.FG_REFRESH_SUGGESTIONS?.();};
   setupInteractions(currentProducts);
-  await loadProductsFast(apply);
-  // Rebind catalog after background refresh if necessary
-  if(window.FG_PRODUCTS!==currentProducts){setupCatalog(window.FG_PRODUCTS)}
+  // Never block first paint on Google Apps Script. Cached/snapshot data renders first;
+  // the network refresh updates prices/products in the background.
+  const isProductPage=!!document.querySelector('#productDetail');
+  if(isProductPage){setTimeout(()=>loadProductsFast(apply).catch(()=>{}),180);}else{loadProductsFast(apply).catch(()=>{});}
   const params=new URLSearchParams(location.search);
   if(document.querySelector('#productDetail')){
     const id=params.get('id');

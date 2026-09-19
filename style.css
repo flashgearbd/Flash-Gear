@@ -712,3 +712,88 @@ h1,h2,h3,h4,h5,h6,.brand,.section-head h2,.catalog-hero h1{font-family:"Space Gr
   .similar-image{padding:9px 10px !important;}
   .detail-image-shell{padding:14px !important;}
 }
+
+/* ===== V5 PERFORMANCE + TRUE CONTAIN MEDIA FIX ===== */
+/* Never crop product artwork: preserve the complete source image and its alpha. */
+.product-card .product-visual,
+.similar-image,
+.detail-image-shell{
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  overflow:hidden !important;
+}
+.product-card .product-visual img,
+.similar-image img,
+.detail-main-image{
+  display:block !important;
+  width:auto !important;
+  height:auto !important;
+  max-width:100% !important;
+  max-height:100% !important;
+  object-fit:contain !important;
+  object-position:center !important;
+  background:transparent !important;
+  mix-blend-mode:normal !important;
+  transform:none;
+}
+.product-card .product-visual{
+  height:220px !important;
+  min-height:220px !important;
+  padding:12px 18px !important;
+  background:transparent !important;
+}
+.similar-image{
+  height:190px !important;
+  padding:12px 18px !important;
+  background:transparent !important;
+}
+.detail-image-shell{
+  min-height:520px !important;
+  padding:26px !important;
+  background:transparent !important;
+}
+.detail-main-image{max-height:468px !important;filter:drop-shadow(0 16px 20px rgba(15,53,84,.09));}
+.detail-colour-row strong{display:flex;align-items:center;gap:8px}
+.colour-dot{display:inline-block;width:13px;height:13px;border-radius:50%;background:linear-gradient(145deg,#111,#444);border:1px solid #c8d6e0;box-shadow:0 1px 4px rgba(0,0,0,.14)}
+
+/* Faster, calmer motion on mobile: no expensive card entrance choreography. */
+.product-card,
+.similar-card,
+.featured-track .product-card{
+  animation:none !important;
+  transition:transform .22s ease,box-shadow .22s ease,border-color .22s ease !important;
+}
+.product-visual img,
+.detail-main-image,
+.similar-image img{transition:opacity .18s ease !important;will-change:auto !important;}
+.similar-track,.featured-track{transition:transform .38s cubic-bezier(.22,1,.36,1) !important;will-change:transform;}
+.similar-card{transition:transform .22s ease,box-shadow .22s ease !important;}
+
+/* Touch feedback uses only a class; no dynamically-created ripple DOM on every tap. */
+.fgbd-touching{filter:brightness(.985);transform:scale(.985) !important;}
+.fgbd-ripple{display:none !important;}
+
+@media (hover:hover){
+  .product-card:hover .product-visual img,
+  .similar-card:hover .similar-image img{transform:none !important;}
+}
+@media (hover:none){
+  .product-card:hover,.similar-card:hover,.btn:hover,.fg-wa-float:hover{transform:none !important;box-shadow:inherit;}
+}
+@media(max-width:700px){
+  .product-card .product-visual{height:205px !important;min-height:205px !important;padding:10px 14px !important;}
+  .similar-image{height:165px !important;padding:10px 14px !important;}
+  .detail-image-shell{min-height:330px !important;padding:18px !important;}
+  .detail-main-image{max-height:294px !important;}
+}
+@media(max-width:390px){
+  .product-card .product-visual{height:190px !important;min-height:190px !important;}
+  .similar-image{height:155px !important;}
+  .detail-image-shell{min-height:300px !important;}
+  .detail-main-image{max-height:266px !important;}
+}
+@media(prefers-reduced-motion:reduce){
+  .similar-track,.featured-track{transition:none !important;}
+  .fgbd-touching{transform:none !important;filter:none !important;}
+}
