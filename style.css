@@ -671,40 +671,44 @@ h1,h2,h3,h4,h5,h6,.brand,.section-head h2,.catalog-hero h1{font-family:"Space Gr
 .product-card .product-visual,
 .similar-image,
 .detail-image-shell{
-  background:var(--bg) !important;
+  background:radial-gradient(circle at 50% 45%,rgba(232,246,255,.42),rgba(255,255,255,0) 72%) !important;
 }
 .product-card .product-visual img,
 .similar-image img,
 .detail-main-image{
   background:transparent !important;
-  mix-blend-mode:multiply;
+  mix-blend-mode:normal !important;
   object-fit:contain !important;
   object-position:center center !important;
+  width:100% !important;
+  height:100% !important;
+  max-width:100% !important;
+  max-height:100% !important;
 }
 .product-card .product-visual{
-  height:205px !important;
-  min-height:205px !important;
-  max-height:205px !important;
-  padding:18px !important;
+  height:220px !important;
+  min-height:220px !important;
+  max-height:220px !important;
+  padding:10px 14px !important;
   overflow:hidden !important;
 }
 .similar-image{
-  padding:16px !important;
+  padding:10px 14px !important;
   overflow:hidden !important;
 }
 .detail-image-shell{
-  padding:22px !important;
+  padding:16px !important;
 }
 .cart-checkout-form input#checkoutAddress{
   min-height:44px;
 }
 @media(max-width:700px){
   .product-card .product-visual{
-    height:185px !important;
-    min-height:185px !important;
-    max-height:185px !important;
-    padding:14px !important;
+    height:205px !important;
+    min-height:205px !important;
+    max-height:205px !important;
+    padding:9px 10px !important;
   }
-  .similar-image{padding:12px !important;}
-  .detail-image-shell{padding:18px !important;}
+  .similar-image{padding:9px 10px !important;}
+  .detail-image-shell{padding:14px !important;}
 }

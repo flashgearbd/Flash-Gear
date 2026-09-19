@@ -60,7 +60,7 @@ const CATEGORY_ICONS = {
 
 const money = n => "৳" + Number(n || 0).toLocaleString("en-BD");
 function escapeHtml(v){return String(v??"").replace(/[&<>'"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;","\"":"&quot;"}[c]));}
-function imageUrl(v){const u=String(v||"").trim();if(!u)return "";let m=u.match(/drive\.google\.com\/(?:uc\?(?:[^#]*?&)?id=|file\/d\/|open\?id=)([A-Za-z0-9_-]+)/);if(!m)m=u.match(/[?&]id=([A-Za-z0-9_-]+)/);return m?`https://drive.google.com/thumbnail?id=${m[1]}&sz=w1200`:u;}
+function imageUrl(v){const u=String(v||"").trim();if(!u)return "";let m=u.match(/drive\.google\.com\/(?:uc\?(?:[^#]*?&)?id=|file\/d\/|open\?id=)([A-Za-z0-9_-]+)/);if(!m)m=u.match(/[?&]id=([A-Za-z0-9_-]+)/);return m?`https://drive.google.com/thumbnail?id=${m[1]}&sz=w1000`:u;}
 function imageRetryAttrs(raw){const original=String(raw||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;');const primary=imageUrl(raw).replace(/&/g,'&amp;').replace(/"/g,'&quot;');return `data-original-src="${original}" data-retry-src="${primary}" onerror="fgImageRetry(this)"`;}
 function fgImageRetry(img){if(!img)return;const original=img.dataset.originalSrc||'';const id=(original.match(/(?:[?&]id=|file\/d\/|open\?id=)([A-Za-z0-9_-]+)/)||[])[1];const tries=Number(img.dataset.retryDone||'0');img.dataset.retryDone=String(tries+1);const variants=[img.dataset.retrySrc||'',id?`https://drive.google.com/thumbnail?id=${id}&sz=w900`:'' ,id?`https://drive.google.com/uc?export=view&id=${id}`:'',original].filter(Boolean);const next=variants[tries];if(next){img.src=next;return;}img.classList.add('img-broken');img.setAttribute('aria-hidden','true');const ph=img.nextElementSibling;if(ph)ph.hidden=false;}
 function wa(name=""){const t=name?`Hello FLASH GEAR BD, I want to order: ${name}`:`Hello FLASH GEAR BD, I want to know about your products.`;return `https://wa.me/${CONFIG.whatsappNumber}?text=${encodeURIComponent(t)}`;}
@@ -307,7 +307,7 @@ function readCachedProducts(){try{const x=JSON.parse(localStorage.getItem(CACHE_
 function writeCachedProducts(data){try{localStorage.setItem(CACHE_KEY,JSON.stringify({time:Date.now(),data}))}catch{}}
 async function fetchProducts(){
   if(!CONFIG.productsApiUrl||CONFIG.productsApiUrl.includes("PASTE_"))return CONFIG.fallbackProducts;
-  const controller=new AbortController(); const timer=setTimeout(()=>controller.abort(),7000);
+  const controller=new AbortController(); const timer=setTimeout(()=>controller.abort(),3200);
   try{const r=await fetch(CONFIG.productsApiUrl,{cache:"no-store",signal:controller.signal});if(!r.ok)throw Error(r.status);const d=await r.json();if(!Array.isArray(d))throw Error("Invalid data");writeCachedProducts(d);return d}catch(e){console.warn("Product API unavailable",e);return readCachedProducts()||CONFIG.fallbackProducts}finally{clearTimeout(timer)}
 }
 async function loadProductsFast(onData){
@@ -406,6 +406,15 @@ function setupInteractions(products){
   if(window.FG_INTERACTIONS_BOUND)return;
   window.FG_INTERACTIONS_BOUND=true;
   document.addEventListener("click",e=>{
+    // Intercept real product links so the cached product snapshot is saved before navigation.
+    // This makes product pages open immediately instead of waiting for the Google Apps Script API.
+    const productLink=e.target.closest?.(".product-card-link,.similar-link");
+    if(productLink && !e.defaultPrevented && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey){
+      const id=productLink.getAttribute("href")?.match(/[?&]id=([^&]+)/)?.[1];
+      const list=window.FG_PRODUCTS||products||[];
+      const p=list.find(x=>String(x.id)===decodeURIComponent(id||""));
+      if(p){e.preventDefault();e.stopPropagation();openProductPage(p);return;}
+    }
     if(window.FG_SUPPRESS_CARD_CLICK_UNTIL && Date.now()<window.FG_SUPPRESS_CARD_CLICK_UNTIL){window.FG_SUPPRESS_CARD_CLICK_UNTIL=0;if(e.target.closest('.product-card-link,.similar-link')){e.preventDefault();e.stopPropagation();return;}}
     const buy=e.target.closest("[data-buy-now]");
     if(buy){e.preventDefault();e.stopPropagation();const p=(window.FG_PRODUCTS||products).find(x=>String(x.id)===String(buy.dataset.buyNow));const q=Math.max(1,parseInt(document.querySelector("#detailQty")?.value||"1",10)||1);if(p&&String(p.stock||"").toLowerCase()!=="out of stock"){addToCart(p,q);openCart();}return;}

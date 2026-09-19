@@ -18,8 +18,9 @@ function doGet(e){
   const headers=values[0].map(h=>String(h).trim());
   const products=values.slice(1).filter(r=>r.some(c=>String(c).trim()!=='')).map(row=>{
     const o={};headers.forEach((h,i)=>o[h]=String(row[i]??'').trim());
-    const active=String(o.Active||'').toLowerCase();if(active&&!['yes','true','1','active'].includes(active))return null;
-    return {id:o['Product ID']||'',name:o['Product Name']||'',category:o['Category']||'Gadgets',brand:o['Brand']||'',price:number(o['Price']),mrp:number(o['MRP']),stock:o['Stock']||'In Stock',warranty:o['Warranty']||'',image:o['Image URL']||'',description:o['Description']||'',color:o['Color']||o['Colour']||'',featured:['yes','true','1'].includes(String(o['Featured']).toLowerCase())};
+    const field=(...names)=>{for(const name of names){const key=headers.find(h=>String(h).trim().toLowerCase()===String(name).toLowerCase());if(key&&String(o[key]||'').trim())return String(o[key]).trim();}return '';};
+    const active=String(field('Active')).toLowerCase();if(active&&!['yes','true','1','active'].includes(active))return null;
+    return {id:field('Product ID'),name:field('Product Name'),category:field('Category')||'Gadgets',brand:field('Brand'),price:number(field('Price')),mrp:number(field('MRP')),stock:field('Stock')||'In Stock',warranty:field('Warranty'),image:field('Image URL'),description:field('Description'),color:field('Color','Colour'),featured:['yes','true','1'].includes(String(field('Featured')).toLowerCase())};
   }).filter(Boolean);
   return json(products);
 }
