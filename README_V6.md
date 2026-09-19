@@ -5,7 +5,7 @@ This build extends the Premium Polished storefront with mobile-first shopping, S
 ## Included now
 - Fixed mobile bottom navigation: Home / Categories / Cart / WhatsApp
 - Payment trust pills: bKash / Nagad / COD
-- Delivery area + delivery charge in cart: Dhaka ৳60 / Outside Dhaka ৳120
+- Delivery area + delivery charge in cart: Inside Chattogram City ৳50 / Outside Chattogram ৳120
 - Full WhatsApp order summary including delivery and optional bKash/Nagad transaction ID
 - Address required at checkout
 - 11-digit Bangladesh phone validation
@@ -43,8 +43,8 @@ This build extends the Premium Polished storefront with mobile-first shopping, S
 6. Orders will be written to an `Orders` sheet automatically after the first checkout POST.
 
 ## Delivery charges
-- Inside Dhaka: ৳60
-- Outside Dhaka: ৳120
+- Inside Chattogram City: ৳50
+- Outside Chattogram: ৳120
 
 Update these values in `app.js` if your business policy changes.
 
