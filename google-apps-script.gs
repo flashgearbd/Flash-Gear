@@ -37,17 +37,8 @@ const PRODUCT_HEADERS = [
 ];
 
 const ORDER_HEADERS = [
-  'Order ID',
-  'Date',
-  'Customer Name',
-  'Phone',
-  'Address',
-  'Products',
-  'Subtotal',
-  'Delivery Fee',
-  'Total',
-  'Payment',
-  'Status'
+  'Order ID','Date','Customer Name','Phone','Address','Products','Subtotal','Delivery Fee','Total','Payment','Status',
+  'Delivery Area','Transaction ID','Client Reference'
 ];
 
 
@@ -69,10 +60,7 @@ function setupStore() {
   let orders = ss.getSheetByName(ORDERS_SHEET);
   if (!orders) orders = ss.insertSheet(ORDERS_SHEET);
 
-  if (orders.getLastRow() === 0) {
-    orders.getRange(1, 1, 1, ORDER_HEADERS.length)
-      .setValues([ORDER_HEADERS]);
-  }
+  ensureHeaders(orders, ORDER_HEADERS);
 
   let settings = ss.getSheetByName(SETTINGS_SHEET);
   if (!settings) settings = ss.insertSheet(SETTINGS_SHEET);
@@ -88,7 +76,7 @@ function setupStore() {
       ['WhatsApp Number', ''],
       ['Store Email', ''],
       ['Website URL', ''],
-      ['Announcement', 'FLASH GEAR BD • Original Products • Fair Price • WhatsApp Ordering']
+      ['Announcement', 'FLASH GEAR BD • Good Quality • Best Price • Reliable Service']
     ]);
   }
 
@@ -649,135 +637,77 @@ function getImageExtension(mimeType) {
 function createOrder(data) {
   const lock = LockService.getScriptLock();
   lock.waitLock(15000);
-
   try {
     const items = parseItems(data.items);
+    if (!items.length) throw new Error('No products in order.');
 
-    if (!items.length) {
-      throw new Error('No products in order.');
+    const customerName = String(data.customerName || data.name || '').trim();
+    const phone = String(data.phone || '').replace(/\s+/g,'').trim();
+    const address = String(data.address || '').trim();
+    const deliveryArea = String(data.deliveryArea || '').trim();
+    const payment = String(data.payment || 'COD').trim();
+    const transactionId = String(data.transactionId || '').trim();
+    const clientReference = String(data.clientReference || '').trim();
+
+    if (!customerName) throw new Error('Customer name is required.');
+    if (!/^01\d{9}$/.test(phone)) throw new Error('Enter a valid Bangladesh mobile number.');
+    if (!address) throw new Error('Delivery address is required.');
+    if (!['Inside Chattogram City','Outside Chattogram'].includes(deliveryArea)) throw new Error('Invalid delivery area.');
+    if (!['COD','bKash','Nagad'].includes(payment)) throw new Error('Invalid payment method.');
+    if (payment !== 'COD' && !transactionId) throw new Error('Transaction ID is required for bKash/Nagad.');
+
+    const ordersSheet = getSheet(ORDERS_SHEET);
+    ensureHeaders(ordersSheet, ORDER_HEADERS);
+    if (clientReference) {
+      const last = ordersSheet.getLastRow();
+      if (last >= 2) {
+        const refs = ordersSheet.getRange(2,14,last-1,1).getDisplayValues().flat();
+        const idx = refs.findIndex(v => String(v).trim() === clientReference);
+        if (idx >= 0) {
+          const row = ordersSheet.getRange(idx+2,1,1,ORDER_HEADERS.length).getValues()[0];
+          return {success:true, duplicate:true, orderId:String(row[0]), subtotal:Number(row[6]||0), deliveryFee:Number(row[7]||0), total:Number(row[8]||0)};
+        }
+      }
     }
 
     const productsSheet = getSheet(PRODUCTS_SHEET);
-
     let subtotal = 0;
     const orderProducts = [];
-
-    items.forEach(function(item) {
-      const id = String(
-        item.id || item.productId || ''
-      ).trim();
-
-      const qty = Number(
-        item.quantity || item.qty || 0
-      );
-
-      if (!id) throw new Error('Product ID missing.');
-
-      if (!Number.isInteger(qty) || qty <= 0) {
-        throw new Error('Invalid quantity.');
-      }
-
-      const row = findProductRow(
-        productsSheet,
-        id
-      );
-
-      if (row === -1) {
-        throw new Error('Product not found: ' + id);
-      }
-
-      const p = rowToProduct(
-        productsSheet.getRange(
-          row, 1, 1, PRODUCT_HEADERS.length
-        ).getValues()[0]
-      );
-
-      if (String(p.status).toLowerCase() !== 'active') {
-        throw new Error(
-          p.productName + ' is unavailable.'
-        );
-      }
-
-      if (Number(p.stock) < qty) {
-        throw new Error(
-          'Not enough stock for ' + p.productName
-        );
-      }
-
-      const price = Number(p.rp || 0);
-      const lineTotal = price * qty;
-
-      subtotal += lineTotal;
-
-      orderProducts.push({
-        row: row,
-        productId: p.productId,
-        productName: p.productName,
-        quantity: qty,
-        price: price,
-        stock: Number(p.stock),
-        lineTotal: lineTotal
-      });
+    items.forEach(function(item){
+      const id=String(item.id||item.productId||'').trim();
+      const qty=Number(item.quantity||item.qty||0);
+      if(!id) throw new Error('Product ID missing.');
+      if(!Number.isInteger(qty)||qty<=0) throw new Error('Invalid quantity.');
+      const row=findProductRow(productsSheet,id);
+      if(row===-1) throw new Error('Product not found: '+id);
+      const p=rowToProduct(productsSheet.getRange(row,1,1,PRODUCT_HEADERS.length).getValues()[0]);
+      if(String(p.status).toLowerCase()!=='active') throw new Error(p.productName+' is unavailable.');
+      if(Number(p.stock)<qty) throw new Error('Not enough stock for '+p.productName+'. Only '+Number(p.stock)+' left.');
+      const price=Number(p.rp||0), lineTotal=price*qty;
+      subtotal+=lineTotal;
+      orderProducts.push({row,productId:p.productId,productName:p.productName,quantity:qty,price,stock:Number(p.stock),lineTotal});
     });
 
-    const settings = getPublicSettings();
-
-    const requestedFee = Number(
-      data.deliveryFee
-    );
-
-    const deliveryFee = Number.isFinite(requestedFee) &&
-      requestedFee >= 0
-      ? requestedFee
-      : Number(settings.defaultDeliveryFee || 0);
-
+    const deliveryFee = calculateDeliveryFee(deliveryArea, orderProducts, subtotal);
     const total = subtotal + deliveryFee;
+    orderProducts.forEach(item=>productsSheet.getRange(item.row,8).setValue(item.stock-item.quantity));
 
-    // Reduce stock only after all items have passed validation.
-    orderProducts.forEach(function(item) {
-      productsSheet.getRange(item.row, 8)
-        .setValue(item.stock - item.quantity);
-    });
+    const orderId=generateOrderId();
+    const productText=orderProducts.map(item=>item.productName+' x'+item.quantity+' @ '+item.price).join(' | ');
+    ordersSheet.appendRow([orderId,new Date(),customerName,phone,address,productText,subtotal,deliveryFee,total,payment,'Pending',deliveryArea,transactionId,clientReference]);
+    return {success:true,orderId,subtotal,deliveryFee,total,items:orderProducts.map(function(item){return {id:item.productId,name:item.productName,qty:item.quantity,price:item.price};})};
+  } finally { lock.releaseLock(); }
+}
 
-    const orderId =
-      generateOrderId();
-
-    const productText =
-      orderProducts.map(function(item) {
-        return (
-          item.productName +
-          ' x' +
-          item.quantity +
-          ' @ ' +
-          item.price
-        );
-      }).join(' | ');
-
-    getSheet(ORDERS_SHEET).appendRow([
-      orderId,
-      new Date(),
-      data.customerName || data.name || '',
-      data.phone || '',
-      data.address || '',
-      productText,
-      subtotal,
-      deliveryFee,
-      total,
-      data.payment || 'COD',
-      'Pending'
-    ]);
-
-    return {
-      success: true,
-      orderId: orderId,
-      subtotal: subtotal,
-      deliveryFee: deliveryFee,
-      total: total
-    };
-
-  } finally {
-    lock.releaseLock();
+function calculateDeliveryFee(area, orderProducts, subtotal){
+  const count=orderProducts.reduce((s,i)=>s+Number(i.quantity||0),0);
+  if(area==='Inside Chattogram City'){
+    const unitPrices=[]; orderProducts.forEach(i=>{for(let n=0;n<i.quantity;n++)unitPrices.push(Number(i.price||0));});
+    const over1900=unitPrices.some(v=>v>1900);
+    const over1000Count=unitPrices.filter(v=>v>1000).length;
+    return count>=2 && (over1900 || over1000Count>=2) ? 0 : 50;
   }
+  return count>=2 && subtotal>6890 ? 0 : 120;
 }
 
 
@@ -865,7 +795,7 @@ function getPublicSettings() {
 
     announcement:
       settings['Announcement'] ||
-      'FLASH GEAR BD • Original Products • Fair Price • WhatsApp Ordering'
+      'FLASH GEAR BD • Good Quality • Best Price • Reliable Service'
   };
 }
 
@@ -873,6 +803,16 @@ function getPublicSettings() {
 /* ==========================================================
    HELPERS
    ========================================================== */
+
+function ensureHeaders(sheet, headers){
+  const width=Math.max(sheet.getLastColumn(), headers.length);
+  if(sheet.getMaxColumns()<headers.length) sheet.insertColumnsAfter(sheet.getMaxColumns(), headers.length-sheet.getMaxColumns());
+  const current=sheet.getRange(1,1,1,headers.length).getValues()[0];
+  let changed=false;
+  headers.forEach((h,i)=>{if(String(current[i]||'').trim()!==h){current[i]=h;changed=true;}});
+  if(changed) sheet.getRange(1,1,1,headers.length).setValues([current]);
+  sheet.getRange(1,1,1,headers.length).setFontWeight('bold');
+}
 
 function getSheet(name) {
   const ss = SpreadsheetApp.openById(
