@@ -64,7 +64,7 @@ function imageUrl(v){const u=String(v||"").trim();if(!u)return "";let m=u.match(
 function imageRetryAttrs(raw){const original=String(raw||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;');const primary=imageUrl(raw).replace(/&/g,'&amp;').replace(/"/g,'&quot;');return `data-original-src="${original}" data-retry-src="${primary}" onerror="fgImageRetry(this)"`;}
 function fgImageRetry(img){if(!img)return;const original=img.dataset.originalSrc||'';const id=(original.match(/(?:[?&]id=|file\/d\/|open\?id=)([A-Za-z0-9_-]+)/)||[])[1];const tries=Number(img.dataset.retryDone||'0');img.dataset.retryDone=String(tries+1);const variants=[img.dataset.retrySrc||'',id?`https://drive.google.com/thumbnail?id=${id}&sz=w900`:'' ,id?`https://drive.google.com/uc?export=view&id=${id}`:'',original].filter(Boolean);const next=variants[tries];if(next){img.src=next;return;}img.classList.add('img-broken');img.setAttribute('aria-hidden','true');const ph=img.nextElementSibling;if(ph)ph.hidden=false;}
 function wa(name=""){const t=name?`Hello FLASH GEAR BD, I want to order: ${name}`:`Hello FLASH GEAR BD, I want to know about your products.`;return `https://wa.me/${CONFIG.whatsappNumber}?text=${encodeURIComponent(t)}`;}
-function buildWaOrder(items, customer={}){const lines=items.map(i=>`• ${i.name} × ${i.qty} — ${money(i.price*i.qty)}`);const subtotal=items.reduce((s,i)=>s+i.price*i.qty,0);const details=[customer.name&&`Name: ${customer.name}`,customer.phone&&`Phone: ${customer.phone}`,customer.area&&`Delivery Area: ${customer.area}`,customer.payment&&`Payment: ${customer.payment}`].filter(Boolean);return `Hello FLASH GEAR BD, I want to confirm my order:\n${lines.join("\n")}\n\nSubtotal: ${money(subtotal)}${details.length?'\n\n'+details.join('\n'):''}`;}
+function buildWaOrder(items, customer={}){const lines=items.map(i=>`• ${i.name} × ${i.qty} — ${money(i.price*i.qty)}`);const subtotal=items.reduce((s,i)=>s+i.price*i.qty,0);const details=[customer.name&&`Name: ${customer.name}`,customer.phone&&`Phone: ${customer.phone}`,customer.payment&&`Payment: ${customer.payment}`].filter(Boolean);return `Hello FLASH GEAR BD, I want to confirm my order:\n${lines.join("\n")}\n\nSubtotal: ${money(subtotal)}${details.length?'\n\n'+details.join('\n'):''}`;}
 function waCart(items,customer={}){return `https://wa.me/${CONFIG.whatsappNumber}?text=${encodeURIComponent(buildWaOrder(items,customer))}`;}
 async function syncCartPrices(timeoutMs=2500){
   const current=getCart();
@@ -98,7 +98,7 @@ function showCartAddedToast(p){
 }
 function removeFromCart(id){saveCart(getCart().filter(i=>i.id!==id));openCart()}
 function changeQty(id,d){const c=getCart(),x=c.find(i=>i.id===id);if(!x)return;x.qty+=d;if(x.qty<=0)return removeFromCart(id);saveCart(c);openCart()}
-function clearCartAfterOrder(){localStorage.removeItem('fg_cart');updateCartUI();}
+function clearCartAfterOrder(){localStorage.removeItem('fg_cart');['#checkoutName','#checkoutPhone','#checkoutPayment'].forEach(sel=>{const el=document.querySelector(sel);if(el){if(el.tagName==='SELECT')el.selectedIndex=0;else el.value='';el.classList.remove('fg-phone-invalid','fg-input-error');}});const msg=document.querySelector('#checkoutPhoneError');if(msg){msg.hidden=true;msg.textContent='';}updateCartUI();updateCheckoutButtonState();}
 function updateCartUI(){
   const c=getCart(),count=c.reduce((s,i)=>s+i.qty,0),total=c.reduce((s,i)=>s+i.price*i.qty,0);
   document.querySelectorAll("[data-cart-count]").forEach(e=>e.textContent=count);
@@ -110,11 +110,11 @@ function updateCartUI(){
   const co=document.querySelector("#cartCheckout");if(co)co.href=waCart(c);
 }
 function checkoutPhoneIsValid(v){return /^01\d{9}$/.test(String(v||'').replace(/\s+/g,''));}
-function checkoutFormIsValid(){const name=document.querySelector('#checkoutName')?.value.trim()||'';const phone=(document.querySelector('#checkoutPhone')?.value||'').replace(/\s+/g,'');const area=document.querySelector('#checkoutArea')?.value.trim()||'';const payment=document.querySelector('#checkoutPayment')?.value||'';return Boolean(name&&checkoutPhoneIsValid(phone)&&area&&payment);}
+function checkoutFormIsValid(){const name=document.querySelector('#checkoutName')?.value.trim()||'';const phone=(document.querySelector('#checkoutPhone')?.value||'').replace(/\s+/g,'');const payment=document.querySelector('#checkoutPayment')?.value||'';return Boolean(name&&checkoutPhoneIsValid(phone)&&payment);}
 function updateCheckoutButtonState(){const btn=document.querySelector('#cartCheckout');if(!btn)return;const valid=checkoutFormIsValid()&&getCart().length>0;btn.disabled=!valid;btn.setAttribute('aria-disabled',String(!valid));if(!valid&&btn.dataset.submitting!=='1')btn.textContent='Confirm Order on WhatsApp →';}
-function bindCheckoutValidation(){['#checkoutName','#checkoutPhone','#checkoutArea','#checkoutPayment'].forEach(sel=>{const el=document.querySelector(sel);if(!el||el._fgCheckoutBound)return;el._fgCheckoutBound=true;['input','change'].forEach(ev=>el.addEventListener(ev,()=>{if(sel==='#checkoutPhone')validateCheckoutPhone(false);updateCheckoutButtonState();}));});updateCheckoutButtonState();}
+function bindCheckoutValidation(){['#checkoutName','#checkoutPhone','#checkoutPayment'].forEach(sel=>{const el=document.querySelector(sel);if(!el||el._fgCheckoutBound)return;el._fgCheckoutBound=true;['input','change'].forEach(ev=>el.addEventListener(ev,()=>{if(sel==='#checkoutPhone')validateCheckoutPhone(false);updateCheckoutButtonState();}));});updateCheckoutButtonState();}
 function validateCheckoutPhone(showError=true){const el=document.querySelector('#checkoutPhone');const msg=document.querySelector('#checkoutPhoneError');if(!el||!msg)return false;const value=el.value.replace(/\s+/g,'');el.value=value;const valid=checkoutPhoneIsValid(value);const hasInput=value.length>0;if(hasInput&&!valid){el.classList.add('fg-phone-invalid');msg.hidden=false;msg.textContent='Check Number — enter exactly 11 digits (e.g. 01601093553).';}else{el.classList.remove('fg-phone-invalid');msg.hidden=true;msg.textContent='';}if(showError&&hasInput&&!valid){el.focus();}return valid;}
-function ensureCartDrawer(){if(document.querySelector("#cartDrawer")){bindCheckoutValidation();return;}document.body.insertAdjacentHTML("beforeend",`<div id="cartDrawer" class="cart-drawer" hidden><div class="cart-backdrop" data-close-cart></div><aside class="cart-panel"><div class="cart-head"><div><span class="eyebrow">YOUR ORDER</span><h2>Cart</h2></div><button class="drawer-close" data-close-cart aria-label="Close cart">×</button></div><div id="cartBody" class="cart-body"></div><div class="cart-checkout-form"><label class="sr-only" for="checkoutName">Name</label><input id="checkoutName" placeholder="Name" autocomplete="name" maxlength="80"><label class="sr-only" for="checkoutPhone">Phone</label><input id="checkoutPhone" placeholder="Phone — 11 digits (01601093553)" inputmode="numeric" autocomplete="tel-national" maxlength="11" pattern="01[0-9]{9}" aria-describedby="checkoutPhoneError"><div id="checkoutPhoneError" class="fg-phone-error" role="alert" hidden></div><label class="sr-only" for="checkoutArea">Delivery Area</label><input id="checkoutArea" placeholder="Delivery Area" autocomplete="address-level2" maxlength="120"><label class="sr-only" for="checkoutPayment">Payment</label><select id="checkoutPayment"><option value="COD">Cash on Delivery</option><option value="bKash">bKash</option><option value="Nagad">Nagad</option></select></div><div class="cart-foot"><div class="cart-total"><span>Total</span><strong data-cart-total>৳0</strong></div><button id="cartCheckout" class="btn btn-blue btn-block" type="button" disabled aria-disabled="true">Confirm Order on WhatsApp →</button></div></aside></div>`);bindCheckoutValidation();updateCartUI()}
+function ensureCartDrawer(){if(document.querySelector("#cartDrawer")){bindCheckoutValidation();return;}document.body.insertAdjacentHTML("beforeend",`<div id="cartDrawer" class="cart-drawer" hidden><div class="cart-backdrop" data-close-cart></div><aside class="cart-panel"><div class="cart-head"><div><span class="eyebrow">YOUR ORDER</span><h2>Cart</h2></div><button class="drawer-close" data-close-cart aria-label="Close cart">×</button></div><div id="cartBody" class="cart-body"></div><div class="cart-checkout-form"><label class="sr-only" for="checkoutName">Name</label><input id="checkoutName" placeholder="Name" autocomplete="name" maxlength="80"><label class="sr-only" for="checkoutPhone">Phone</label><input id="checkoutPhone" name="fg-customer-phone" placeholder="Phone — 11 digits (01601093553)" inputmode="numeric" autocomplete="off" autocapitalize="none" maxlength="11" pattern="01[0-9]{9}" aria-describedby="checkoutPhoneError"><div id="checkoutPhoneError" class="fg-phone-error" role="alert" hidden></div><label class="sr-only" for="checkoutPayment">Payment</label><select id="checkoutPayment"><option value="COD">Cash on Delivery</option><option value="bKash">bKash</option><option value="Nagad">Nagad</option></select></div><div class="cart-foot"><div class="cart-total"><span>Total</span><strong data-cart-total>৳0</strong></div><button id="cartCheckout" class="btn btn-blue btn-block" type="button" disabled aria-disabled="true">Confirm Order on WhatsApp →</button></div></aside></div>`);bindCheckoutValidation();updateCartUI()}
 function openCart(){ensureCartDrawer();const d=document.querySelector("#cartDrawer");d.hidden=false;document.body.classList.add("drawer-open");requestAnimationFrame(()=>d.classList.add("is-open"));updateCartUI();syncCartPrices(1800).catch(()=>{});}
 function closeCart(){const d=document.querySelector("#cartDrawer");if(!d)return;d.classList.remove("is-open");setTimeout(()=>{d.hidden=true},180);document.body.classList.remove("drawer-open")}
 
@@ -155,7 +155,7 @@ function renderProductPage(p){
         ${p.brand?`<div class="detail-brand">${escapeHtml(p.brand)}</div>`:''}
         <div class="detail-price">${money(price)} ${mrp>price?`<del>${money(mrp)}</del><span class="save-pill">-${discount}%</span>`:''}</div>
         <div class="detail-stock"><span></span>${escapeHtml(p.stock||'In Stock')}</div>
-        <div class="detail-meta">${p.brand?`<div><span>Brand</span><strong>${escapeHtml(p.brand)}</strong></div>`:''}<div><span>Category</span><strong>${escapeHtml(p.category||'Gadgets')}</strong></div>${p.warranty?`<div><span>Warranty</span><strong>${escapeHtml(p.warranty)}</strong></div>`:''}</div>
+        <div class="detail-meta">${p.brand?`<div><span>Brand</span><strong>${escapeHtml(p.brand)}</strong></div>`:''}<div><span>Category</span><strong>${escapeHtml(p.category||'Gadgets')}</strong></div>${p.color?`<div><span>Colour</span><strong>${escapeHtml(p.color)}</strong></div>`:''}${p.warranty?`<div><span>Warranty</span><strong>${escapeHtml(p.warranty)}</strong></div>`:''}</div>
         <div class="detail-qty"><button type="button" data-detail-minus aria-label="Decrease quantity">−</button><input id="detailQty" value="1" inputmode="numeric" aria-label="Quantity"><button type="button" data-detail-plus aria-label="Increase quantity">+</button></div><div class="detail-actions"><button class="btn btn-blue btn-large" data-add-product="${escapeHtml(p.id)}" ${String(p.stock).toLowerCase()==='out of stock'?'disabled':''}>Add to Cart</button><button class="btn btn-soft btn-large" data-buy-now="${escapeHtml(p.id)}" ${String(p.stock).toLowerCase()==='out of stock'?'disabled':''}>Buy Now</button></div><a class="detail-wa-link" href="${wa(p.name)}" target="_blank" rel="noopener">WhatsApp Order</a>
         <div class="detail-benefits"><span><i class="fa-solid fa-shield-halved" aria-hidden="true"></i> Original</span><span>↻ Warranty</span><span><i class="fa-solid fa-truck-fast" aria-hidden="true"></i> Delivery</span><span><i class="fa-brands fa-whatsapp" aria-hidden="true"></i> Support</span></div>
       </section>
@@ -187,7 +187,7 @@ function setupSimilarProducts(current){
   const start=()=>{stop();if(reduce||document.hidden||dragging)return;timer=setInterval(()=>move(1),4200);};
   const down=e=>{if(e.pointerType==='mouse'&&e.button!==0)return;dragging=true;moved=false;startX=e.clientX;startPos=pos;stop();track.style.transition='none';viewport.setPointerCapture?.(e.pointerId);};
   const moveDrag=e=>{if(!dragging)return;const dx=e.clientX-startX;if(Math.abs(dx)>8)moved=true;const w=width();if(!w)return;let raw=startPos-dx/w;const m=max();if(raw<0)raw*=.18;if(raw>m)raw=m+(raw-m)*.18;pos=raw;apply();};
-  const up=e=>{if(!dragging)return;const dx=e.clientX-startX;dragging=false;const w=width();const threshold=Math.max(36,w*.15);if(Math.abs(dx)>=threshold)pos=startPos+(dx<0?1:-1);else pos=Math.round(pos);pos=Math.max(0,Math.min(max(),pos));track.style.transition='transform .72s var(--ease-premium)';apply();if(moved)window.FG_SUPPRESS_CARD_CLICK_UNTIL=Date.now()+350;start();};
+  const up=e=>{if(!dragging)return;const dx=e.clientX-startX;dragging=false;const w=width();const threshold=Math.max(36,w*.15);if(Math.abs(dx)>=threshold)pos=startPos+(dx<0?1:-1);else pos=Math.round(pos);pos=Math.max(0,Math.min(max(),pos));track.style.transition='transform .72s var(--ease-premium)';apply();if(moved)window.FG_SUPPRESS_CARD_CLICK_UNTIL=Date.now()+120;start();};
   viewport.addEventListener('pointerdown',down,{passive:true});viewport.addEventListener('pointermove',moveDrag,{passive:true});viewport.addEventListener('pointerup',up,{passive:true});viewport.addEventListener('pointercancel',up,{passive:true});
   viewport.addEventListener('mouseenter',stop);viewport.addEventListener('mouseleave',start);
   document.addEventListener('visibilitychange',()=>document.hidden?stop():start());
@@ -283,7 +283,7 @@ function setupFeaturedSlider(){
     const w=stepWidth();const threshold=Math.max(38,w*.16);
     if(Math.abs(dx)>=threshold){pos=startPos+(dx<0?1:-1)}else{pos=Math.round(pos)}
     const max=maxStep();pos=Math.max(0,Math.min(max,pos));applyPos();
-    if(moved)window.FG_SUPPRESS_CARD_CLICK_UNTIL=Date.now()+350;
+    if(moved)window.FG_SUPPRESS_CARD_CLICK_UNTIL=Date.now()+120;
     paused=false;start();
   };
   viewport.addEventListener('pointerdown',onDown,{passive:true});
@@ -431,16 +431,15 @@ function setupInteractions(products){
       const btn=e.target.closest("#cartCheckout");
       const name=document.querySelector("#checkoutName")?.value.trim()||"";
       const phone=(document.querySelector("#checkoutPhone")?.value||"").replace(/\s+/g,"");
-      const area=document.querySelector("#checkoutArea")?.value.trim()||"";
       const payment=document.querySelector("#checkoutPayment")?.value||"";
-      if(!name||!phone||!area||!payment||!checkoutPhoneIsValid(phone)){
-        ["#checkoutName","#checkoutPhone","#checkoutArea"].forEach(sel=>{const el=document.querySelector(sel);if(el&&!el.value.trim()){el.classList.add("fg-input-error");setTimeout(()=>el.classList.remove("fg-input-error"),900);}});
+      if(!name||!phone||!payment||!checkoutPhoneIsValid(phone)){
+        ["#checkoutName","#checkoutPhone"].forEach(sel=>{const el=document.querySelector(sel);if(el&&!el.value.trim()){el.classList.add("fg-input-error");setTimeout(()=>el.classList.remove("fg-input-error"),900);}});
         if(!checkoutPhoneIsValid(phone))validateCheckoutPhone(true);
         showCheckoutError(!checkoutPhoneIsValid(phone)?"Check Number — use exactly 11 digits.":"Please complete all checkout fields.");
         updateCheckoutButtonState();
         return;
       }
-      const customer={name,phone,area,payment};
+      const customer={name,phone,payment};
       btn.disabled=true; btn.dataset.submitting='1'; btn.textContent="Opening WhatsApp…";
       const current=getCart();
       // Build the order immediately so checkout never waits on the network.
