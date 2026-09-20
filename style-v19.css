@@ -1357,46 +1357,72 @@ body.has-product-buybar{padding-bottom:82px}
   .fg-mobile-nav{display:none!important;}
 }
 
+/* ================================================================
+   FLASH GEAR BD V19 — FINAL MOBILE CAROUSEL + HEADER BRANDING
+   ================================================================ */
+@media (max-width:700px){
+  /* Keep the search and hero visually separated. */
+  .hero.hero-v9{margin-top:12px!important;}
 
-/* ================= V19 FIXES (append-only; safe to delete a block to undo it) ================= */
+  /* Mobile header: menu → gap → logo → brand name → cart. */
+  .header-main{
+    grid-template-columns:42px minmax(0,1fr) 44px!important;
+    grid-template-rows:58px 48px!important;
+    min-height:112px!important;height:112px!important;
+    column-gap:8px!important;
+    padding:4px 10px 6px!important;
+  }
+  .header-main .brand{
+    grid-column:2!important;grid-row:1!important;
+    justify-self:start!important;align-self:center!important;
+    display:flex!important;align-items:center!important;
+    gap:9px!important;min-width:0!important;width:100%!important;
+    overflow:hidden!important;
+  }
+  .header-main .brand img{
+    width:48px!important;height:48px!important;flex:0 0 48px!important;
+    object-fit:contain!important;margin:0!important;
+  }
+  .header-main .brand-name{
+    display:block!important;min-width:0!important;
+    color:#08243a!important;font-family:Sora,Inter,sans-serif!important;
+    font-size:11px!important;font-weight:800!important;letter-spacing:.55px!important;
+    white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;
+  }
 
-/* A. CRITICAL: bottom dock / WhatsApp bubble / buy bar were sitting on top of the cart drawer and covering "Confirm Order" */
-body.drawer-open .fg-mobile-nav,
-body.drawer-open .fg-wa-float,
-body.drawer-open .fg-product-buybar,
-body.sidebar-open .fg-mobile-nav,
-body.sidebar-open .fg-wa-float,
-body.sidebar-open .fg-product-buybar{display:none!important}
+  /* Dedicated second-row search. */
+  .header-main .search{grid-column:1/4!important;grid-row:2!important;}
 
-/* B. WhatsApp bubble was covering the "Buy Now" button on product pages (mobile) */
-@media(max-width:700px){body.has-buybar .fg-wa-float{display:none!important}}
-
-/* C. Contact page: 3-column grid had no mobile layout (content ran off-screen) */
-@media(max-width:700px){.contact-grid{grid-template-columns:1fr!important}}
-@media(min-width:701px) and (max-width:1000px){.contact-grid{grid-template-columns:repeat(2,1fr)}}
-
-/* D. Hero contrast on phones: dark text was sitting on the dark part of the photo */
-@media(max-width:700px){
-  .hero-v9 .hero-content::before{content:"";position:absolute;inset:0 -24px;z-index:-1;pointer-events:none;background:linear-gradient(180deg,rgba(2,10,24,.62) 0%,rgba(2,10,24,.42) 55%,rgba(2,10,24,0) 100%)}
-  .hero h1{color:#f7fbff!important;text-shadow:0 2px 16px rgba(0,8,24,.7)!important}
-  .hero-v9 .hero-sub,.hero .hero-sub{color:#eaf6ff!important;text-shadow:0 1px 10px rgba(0,8,24,.7)}
-  .hero-copy p{color:#d9ebf8!important;text-shadow:0 1px 8px rgba(0,8,24,.7)}
-  .hero-quick-links>span{color:#cfe8ff!important}
+  /* New Arrivals + Hot Deals: real horizontal track, no overlapping grid columns. */
+  .home-row-section .featured-viewport{
+    overflow:hidden!important;overflow-x:hidden!important;
+    width:100%!important;padding:8px 2px 18px!important;
+    touch-action:pan-x!important;
+  }
+  .home-row-section #newArrivals,
+  .home-row-section #hotDeals{
+    display:flex!important;flex-flow:row nowrap!important;
+    gap:12px!important;width:max-content!important;
+    grid-auto-flow:initial!important;grid-auto-columns:initial!important;
+    transform:var(--fg-rail-transform,translate3d(0,0,0))!important;
+    will-change:transform!important;align-items:stretch!important;
+  }
+  .home-row-section #newArrivals .product-card,
+  .home-row-section #hotDeals .product-card{
+    flex:0 0 min(78vw,285px)!important;
+    width:min(78vw,285px)!important;min-width:min(78vw,285px)!important;
+    max-width:min(78vw,285px)!important;
+    margin:0!important;scroll-snap-align:none!important;
+  }
+  .home-row-section #newArrivals .product-card + .product-card,
+  .home-row-section #hotDeals .product-card + .product-card{margin-left:0!important;}
+  .home-row-section .featured-viewport{cursor:grab!important;}
+  .home-row-section .featured-viewport:active{cursor:grabbing!important;}
 }
-/* Desktop hero: slogan sat dark-on-dark over the headphones; ghost button was cyan-on-cyan */
-.hero-v9 .hero-slogan{color:#fff!important;text-shadow:0 2px 18px rgba(0,8,24,.65)!important}
-.hero-v9 .btn-hero-light{background:#fff!important;color:#0a6fc2!important;border-color:#bfe6ff!important}
-
-/* E. iOS Safari zooms the page when an input is under 16px */
-.header-main .search input,.catalog-tools input,.catalog-tools select{font-size:16px!important}
-
-/* F. Desktop header: search box was ~220px wide — search is the #1 way people find products */
-@media(min-width:701px){
-  .header-main{display:grid!important;grid-template-columns:auto minmax(280px,1fr) auto!important;column-gap:24px!important;align-items:center}
-  .header-main .brand{grid-column:1!important;grid-row:1!important;justify-self:start!important}
-  .header-main .search{grid-column:2!important;grid-row:1!important;width:100%!important;max-width:680px;justify-self:center}
-  .header-main .cart{grid-column:3!important;grid-row:1!important;justify-self:end}
+@media (max-width:390px){
+  .header-main .brand img{width:44px!important;height:44px!important;flex-basis:44px!important;}
+  .header-main .brand{gap:7px!important;}
+  .header-main .brand-name{font-size:10px!important;letter-spacing:.35px!important;}
+  .home-row-section #newArrivals .product-card,
+  .home-row-section #hotDeals .product-card{flex-basis:80vw!important;width:80vw!important;min-width:80vw!important;max-width:80vw!important;}
 }
-
-/* G. Anchor from hero "Explore Categories" lands below the sticky header */
-#shopByCategory{scroll-margin-top:150px}
