@@ -233,106 +233,79 @@ function setupProductRail(trackSelector, prevSelector, nextSelector, interval=45
   if(!originals.length)return;
   const count=originals.length;
   const source=originals.map(el=>el.cloneNode(true));
-
-  // A single authoritative track: three copies give a stable infinite loop.
   track.innerHTML='';
-  for(let set=0;set<3;set++) source.forEach(el=>track.appendChild(el.cloneNode(true)));
+  if(count<2) source.forEach(el=>track.appendChild(el.cloneNode(true)));
+  else for(let set=0;set<3;set++)source.forEach(el=>track.appendChild(el.cloneNode(true)));
 
-  let pos=count;
-  let timer=null;
-  let dragging=false;
-  let moved=false;
-  let pointerId=null;
-  let startX=0;
-  let startPos=count;
-  let suppressUntil=0;
+  let timer=null, resizeTimer=null, pointerStartX=0, pointerDown=false, suppressUntil=0;
   const reduced=!!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-  const transition='transform .68s cubic-bezier(.22,1,.36,1)';
-
   const stepWidth=()=>{
     const card=track.querySelector('.product-card');
     if(!card)return 0;
-    const cs=getComputedStyle(track);
-    const gap=parseFloat(cs.columnGap||cs.gap)||12;
+    const gap=parseFloat(getComputedStyle(track).columnGap||getComputedStyle(track).gap)||12;
     return card.getBoundingClientRect().width+gap;
   };
-  const setPos=(animated=true)=>{
-    const w=stepWidth();
-    if(!w)return;
-    track.style.transition=animated?transition:'none';
-    track.style.transform=`translate3d(${-pos*w}px,0,0)`;
-  };
+  const setWidth=()=>stepWidth()*count;
+  const middle=()=>setWidth();
   const normalize=()=>{
-    if(pos>=count*2){pos-=count;setPos(false);requestAnimationFrame(()=>setPos(true));}
-    else if(pos<count){pos+=count;setPos(false);requestAnimationFrame(()=>setPos(true));}
+    const w=setWidth();
+    if(!w)return;
+    if(viewport.scrollLeft < w*0.5) viewport.scrollLeft += w;
+    else if(viewport.scrollLeft > w*1.5) viewport.scrollLeft -= w;
   };
   const stop=()=>{if(timer){clearTimeout(timer);timer=null;}};
   const schedule=()=>{
     stop();
-    if(reduced||document.hidden||dragging||count<2)return;
+    if(reduced||document.hidden||count<2)return;
     timer=setTimeout(()=>{move(1);schedule();},interval);
   };
-  const move=dir=>{if(count<2)return;pos+=dir;setPos(true);};
-  const finish=()=>{normalize();schedule();};
-
-  const prev=document.querySelector(prevSelector), next=document.querySelector(nextSelector);
-  const onPrev=()=>{stop();move(-1);setTimeout(finish,700);};
-  const onNext=()=>{stop();move(1);setTimeout(finish,700);};
+  const move=dir=>{
+    const w=stepWidth();
+    if(!w||count<2)return;
+    viewport.scrollBy({left:dir*w,behavior:reduced?'auto':'smooth'});
+  };
+  const prev=document.querySelector(prevSelector),next=document.querySelector(nextSelector);
+  const onPrev=()=>{stop();move(-1);setTimeout(()=>{normalize();schedule();},760);};
+  const onNext=()=>{stop();move(1);setTimeout(()=>{normalize();schedule();},760);};
   prev?.addEventListener('click',onPrev);
   next?.addEventListener('click',onNext);
 
-  const down=e=>{
+  const onScroll=()=>{normalize();schedule();};
+  const onPointerDown=e=>{
     if(e.pointerType==='mouse'&&e.button!==0)return;
-    dragging=true;moved=false;pointerId=e.pointerId;startX=e.clientX;startPos=pos;stop();
-    track.style.transition='none';
-    viewport.setPointerCapture?.(e.pointerId);
+    pointerDown=true;pointerStartX=e.clientX;stop();
   };
-  const moveDrag=e=>{
-    if(!dragging||e.pointerId!==pointerId)return;
-    const dx=e.clientX-startX;
-    if(Math.abs(dx)>8)moved=true;
-    const w=stepWidth();if(!w)return;
-    pos=startPos-dx/w;
-    track.style.transform=`translate3d(${-pos*w}px,0,0)`;
-    if(moved)e.preventDefault();
-  };
-  const up=e=>{
-    if(!dragging||e.pointerId!==pointerId)return;
-    const dx=e.clientX-startX;
-    dragging=false;pointerId=null;
-    const w=stepWidth();
-    const threshold=Math.max(36,w*.14);
-    if(Math.abs(dx)>=threshold)pos=startPos+(dx<0?1:-1);
-    else pos=Math.round(pos);
-    setPos(true);
-    if(moved){
+  const onPointerUp=e=>{
+    if(!pointerDown)return;
+    pointerDown=false;
+    if(Math.abs(e.clientX-pointerStartX)>10){
       suppressUntil=Date.now()+450;
       window.FG_SUPPRESS_CARD_CLICK_UNTIL=suppressUntil;
     }
-    setTimeout(finish,700);
+    schedule();
   };
+  const onPointerCancel=()=>{pointerDown=false;schedule();};
+  const onResize=()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(()=>{const w=setWidth();if(w){viewport.scrollLeft=Math.max(0,Math.min(w*2-1,viewport.scrollLeft));normalize();}},120);};
   const onVisibility=()=>document.hidden?stop():schedule();
-  const onResize=()=>{setPos(false);};
-  viewport.addEventListener('pointerdown',down,{passive:true});
-  viewport.addEventListener('pointermove',moveDrag,{passive:false});
-  viewport.addEventListener('pointerup',up,{passive:true});
-  viewport.addEventListener('pointercancel',up,{passive:true});
+
+  viewport.addEventListener('scroll',onScroll,{passive:true});
+  viewport.addEventListener('pointerdown',onPointerDown,{passive:true});
+  viewport.addEventListener('pointerup',onPointerUp,{passive:true});
+  viewport.addEventListener('pointercancel',onPointerCancel,{passive:true});
   viewport.addEventListener('mouseenter',stop);
-  const onLeave=()=>{if(!dragging)schedule();};
-  viewport.addEventListener('mouseleave',onLeave);
+  viewport.addEventListener('mouseleave',()=>{if(!pointerDown)schedule();});
   document.addEventListener('visibilitychange',onVisibility);
   window.addEventListener('resize',onResize,{passive:true});
-  track.addEventListener('transitionend',finish);
+
+  const placeMiddle=()=>{const w=setWidth();if(w&&count>=2)viewport.scrollLeft=w;else viewport.scrollLeft=0;schedule();};
+  requestAnimationFrame(()=>requestAnimationFrame(placeMiddle));
+
   track._productRailCleanup=()=>{
-    stop();prev?.removeEventListener('click',onPrev);next?.removeEventListener('click',onNext);
-    viewport.removeEventListener('pointerdown',down);viewport.removeEventListener('pointermove',moveDrag);
-    viewport.removeEventListener('pointerup',up);viewport.removeEventListener('pointercancel',up);
-    viewport.removeEventListener('mouseenter',stop);viewport.removeEventListener('mouseleave',onLeave);
-    document.removeEventListener('visibilitychange',onVisibility);window.removeEventListener('resize',onResize);track.removeEventListener('transitionend',finish);
+    stop();clearTimeout(resizeTimer);
+    prev?.removeEventListener('click',onPrev);next?.removeEventListener('click',onNext);
+    viewport.removeEventListener('scroll',onScroll);viewport.removeEventListener('pointerdown',onPointerDown);viewport.removeEventListener('pointerup',onPointerUp);viewport.removeEventListener('pointercancel',onPointerCancel);
+    viewport.removeEventListener('mouseenter',stop);document.removeEventListener('visibilitychange',onVisibility);window.removeEventListener('resize',onResize);
   };
-  setPos(false);
-  // Autoplay starts only after the initial layout is painted.
-  requestAnimationFrame(schedule);
 }
 
 function renderHomeRows(products=[]){const valid=Array.isArray(products)?products.filter(p=>p&&p.name):[];const newest=valid.slice().reverse().slice(0,10);const hot=valid.slice().sort((a,b)=>{const da=Number(a.mrp||0)>Number(a.price||0)?1-Number(a.price||0)/Number(a.mrp||1):0;const db=Number(b.mrp||0)>Number(b.price||0)?1-Number(b.price||0)/Number(b.mrp||1):0;return db-da}).slice(0,10);for(const [id,list] of [['#newArrivals',newest],['#hotDeals',hot]]){const el=document.querySelector(id);if(el){el._products=list;el.innerHTML=list.length?list.map((x,i)=>productCard(x,i)).join(''):'<div class="no-results">No products available yet.</div>';}}setupProductRail('#newArrivals','[data-new-prev]','[data-new-next]',4700);setupProductRail('#hotDeals','[data-hot-prev]','[data-hot-next]',3900)}
@@ -381,29 +354,31 @@ function setupSimilarProducts(current){
   const list=[...sameBrand,...sameCat,...rest].slice(0,10);
   if(!list.length){track.innerHTML='<div class="similar-empty">More similar products will appear here.</div>';return;}
   const cards=list.map((p,i)=>similarCard(p,i)).join('');
-  track.innerHTML=cards+cards;
-  track.querySelectorAll('.similar-card').forEach((el,i)=>{if(i>=list.length){el.setAttribute('aria-hidden','true');el.setAttribute('tabindex','-1');}});
-  const viewport=track.parentElement; let pos=0,timer=null,dragging=false,startX=0,startPos=0,moved=false;
-  const card=()=>track.querySelector('.similar-card');
-  const width=()=>{const c=card();return c?c.getBoundingClientRect().width+(parseFloat(getComputedStyle(track).gap)||14):0};
-  const max=()=>Math.max(0,list.length-1);
-  const apply=()=>{const w=width();track.style.transform=`translate3d(${-pos*w}px,0,0)`};
-  const move=dir=>{const w=width();if(!w)return;pos+=dir;if(pos>max())pos=0;if(pos<0)pos=max();track.style.transition='transform .72s var(--ease-premium)';apply();};
-  const reduce=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-  const stop=()=>{if(timer)clearInterval(timer);timer=null;};
-  const start=()=>{stop();if(reduce||document.hidden||dragging)return;timer=setInterval(()=>move(1),5200);};
-  const down=e=>{if(e.pointerType==='mouse'&&e.button!==0)return;dragging=true;moved=false;startX=e.clientX;startPos=pos;stop();track.style.transition='none';viewport.setPointerCapture?.(e.pointerId);};
-  const moveDrag=e=>{if(!dragging)return;const dx=e.clientX-startX;if(Math.abs(dx)>8)moved=true;const w=width();if(!w)return;let raw=startPos-dx/w;const m=max();if(raw<0)raw*=.18;if(raw>m)raw=m+(raw-m)*.18;pos=raw;apply();};
-  const up=e=>{if(!dragging)return;const dx=e.clientX-startX;dragging=false;const w=width();const threshold=Math.max(36,w*.15);if(Math.abs(dx)>=threshold)pos=startPos+(dx<0?1:-1);else pos=Math.round(pos);pos=Math.max(0,Math.min(max(),pos));track.style.transition='transform .72s var(--ease-premium)';apply();if(moved)window.FG_SUPPRESS_CARD_CLICK_UNTIL=Date.now()+120;start();};
-  viewport.addEventListener('pointerdown',down,{passive:true});viewport.addEventListener('pointermove',moveDrag,{passive:true});viewport.addEventListener('pointerup',up,{passive:true});viewport.addEventListener('pointercancel',up,{passive:true});
-  viewport.addEventListener('mouseenter',stop);viewport.addEventListener('mouseleave',start);
-  document.addEventListener('visibilitychange',()=>document.hidden?stop():start());
-  document.querySelector('[data-similar-next]')?.addEventListener('click',()=>{move(1);start()});
-  document.querySelector('[data-similar-prev]')?.addEventListener('click',()=>{move(-1);start()});
-  window.addEventListener('resize',()=>{pos=Math.max(0,Math.min(max(),Math.round(pos)));track.style.transition='none';apply();},{passive:true});
-  track.style.transition='transform .72s var(--ease-premium)';
-  setTimeout(start,900);
+  track.innerHTML=cards+cards+cards;
+  const viewport=track.parentElement;
+  const count=list.length;
+  let timer=null,pointerDown=false,pointerStartX=0;
+  const step=()=>{const c=track.querySelector('.similar-card');return c?c.getBoundingClientRect().width+(parseFloat(getComputedStyle(track).gap)||14):0;};
+  const setWidth=()=>step()*count;
+  const normalize=()=>{const w=setWidth();if(!w)return;if(viewport.scrollLeft<w*.5)viewport.scrollLeft+=w;else if(viewport.scrollLeft>w*1.5)viewport.scrollLeft-=w;};
+  const stop=()=>{if(timer){clearTimeout(timer);timer=null;}};
+  const move=dir=>{const w=step();if(!w)return;viewport.scrollBy({left:dir*w,behavior:'smooth'});};
+  const schedule=()=>{stop();if(document.hidden||count<2)return;timer=setTimeout(()=>{move(1);schedule();},5200);};
+  const onScroll=()=>{normalize();schedule();};
+  const onDown=e=>{if(e.pointerType==='mouse'&&e.button!==0)return;pointerDown=true;pointerStartX=e.clientX;stop();};
+  const onUp=e=>{if(!pointerDown)return;pointerDown=false;if(Math.abs(e.clientX-pointerStartX)>10)window.FG_SUPPRESS_CARD_CLICK_UNTIL=Date.now()+450;schedule();};
+  const onCancel=()=>{pointerDown=false;schedule();};
+  viewport.addEventListener('scroll',onScroll,{passive:true});
+  viewport.addEventListener('pointerdown',onDown,{passive:true});
+  viewport.addEventListener('pointerup',onUp,{passive:true});
+  viewport.addEventListener('pointercancel',onCancel,{passive:true});
+  document.querySelector('[data-similar-next]')?.addEventListener('click',()=>{stop();move(1);schedule()});
+  document.querySelector('[data-similar-prev]')?.addEventListener('click',()=>{stop();move(-1);schedule()});
+  document.addEventListener('visibilitychange',()=>document.hidden?stop():schedule());
+  window.addEventListener('resize',()=>{requestAnimationFrame(()=>{const w=setWidth();if(w){viewport.scrollLeft=Math.max(0,Math.min(w*2-1,viewport.scrollLeft));normalize();}})},{passive:true});
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{const w=setWidth();if(w)viewport.scrollLeft=w;schedule();}));
 }
+
 function similarCard(p,i){const img=p.image?`<img src="${escapeHtml(imageUrl(p.image))}" alt="${escapeHtml(p.name||'Product')}" loading="lazy" decoding="async" ${imageRetryAttrs(p.image)}>`:'';return `<article class="similar-card" data-similar-id="${escapeHtml(p.id)}"><a href="product.html?id=${encodeURIComponent(p.id)}" class="similar-link"><div class="similar-image">${img||escapeHtml(CATEGORY_ICONS[p.category]||'✦')}</div><div class="similar-copy"><small>${escapeHtml(p.brand||p.category||'')}</small><strong>${escapeHtml(p.name||'Product')}</strong><b>${money(p.price)}</b></div></a></article>`}
 
 function categoryPill(cat){return `<a class="category-pill" href="products.html?cat=${encodeURIComponent(cat)}"><span class="cat-icon">${escapeHtml(CATEGORY_ICONS[cat]||"✦")}</span><span>${escapeHtml(cat)}</span><span class="pill-arrow">›</span></a>`}
@@ -710,6 +685,22 @@ function setupSidebar(){
   document.addEventListener('keydown',e=>{if(e.key==='Escape')close()});
 }
 
+function setupHeaderSearch(){
+  if(window.FG_HEADER_SEARCH_READY)return;
+  window.FG_HEADER_SEARCH_READY=true;
+  document.querySelectorAll('form.search').forEach(form=>{
+    const input=form.querySelector('input[name="q"]');
+    if(!input)return;
+    form.addEventListener('submit',e=>{
+      e.preventDefault();
+      const q=String(input.value||'').trim();
+      const target=new URL(form.getAttribute('action')||'products.html',location.href);
+      if(q)target.searchParams.set('q',q); else target.searchParams.delete('q');
+      window.location.assign(target.href);
+    });
+  });
+}
+
 function setupCatalog(products){
   const catalog=document.querySelector('#catalog');if(!catalog)return;
   const s=document.querySelector('#catalogSearch'),c=document.querySelector('#category'),sort=document.querySelector('#sort');
@@ -741,6 +732,7 @@ async function loadPublicSettings(){try{const r=await fetch(CONFIG.productsApiUr
 
 document.addEventListener("DOMContentLoaded",async()=>{
   setupPremiumMobileNav();
+  setupHeaderSearch();
   document.querySelectorAll(".wa-link").forEach(a=>{a.href=wa();a.target="_blank";a.rel="noopener"});
   document.querySelectorAll("[data-facebook]").forEach(a=>a.href=CONFIG.facebook);document.querySelectorAll("[data-instagram]").forEach(a=>a.href=CONFIG.instagram);document.querySelectorAll("#year").forEach(e=>e.textContent=new Date().getFullYear());
   ensureCartDrawer();updateCartUI(); setupSidebar(); setupAnnouncement(); setActiveNav(); loadAnnouncement(); loadPublicSettings();

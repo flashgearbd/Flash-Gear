@@ -1563,3 +1563,55 @@ body.has-product-buybar{padding-bottom:82px}
   .hero-v9 .btn-hero-light{background:#fff!important;color:#075fbd!important;border-color:#fff!important;box-shadow:0 10px 25px rgba(0,45,90,.18)!important;}
   .hero-v9 .hero-quick-links span{color:#fff!important;text-shadow:0 2px 8px rgba(0,20,40,.8)!important;}
 }
+
+/* ================================================================
+   FLASH GEAR BD — V22 TOUCH/SEARCH SAFETY OVERRIDES
+   Native mobile scrolling is authoritative for product rails.
+   No pointer-capture or transform-based touch handling is used.
+   ================================================================ */
+.search{position:relative!important;z-index:300!important;pointer-events:auto!important;}
+.search input,.search button{pointer-events:auto!important;}
+@media(max-width:700px){
+  .featured-viewport,.home-row-section .featured-viewport,.similar-viewport{
+    overflow-x:auto!important;
+    overflow-y:hidden!important;
+    -webkit-overflow-scrolling:touch!important;
+    overscroll-behavior-x:contain!important;
+    overscroll-behavior-y:auto!important;
+    touch-action:auto!important;
+    scroll-behavior:smooth!important;
+    scrollbar-width:none!important;
+    -ms-overflow-style:none!important;
+    cursor:grab!important;
+    user-select:none!important;
+    -webkit-user-select:none!important;
+  }
+  .featured-viewport::-webkit-scrollbar,.home-row-section .featured-viewport::-webkit-scrollbar{display:none!important;}
+  .featured-track,#featured,#newArrivals,#hotDeals{
+    display:flex!important;
+    flex-flow:row nowrap!important;
+    width:max-content!important;
+    min-width:max-content!important;
+    gap:12px!important;
+    transform:none!important;
+    transition:none!important;
+    will-change:auto!important;
+    contain:layout paint!important;
+  }
+  .featured-track .product-card,#featured .product-card,#newArrivals .product-card,#hotDeals .product-card{
+    flex:0 0 min(78vw,292px)!important;
+    width:min(78vw,292px)!important;
+    min-width:min(78vw,292px)!important;
+    max-width:min(78vw,292px)!important;
+    scroll-snap-align:start!important;
+  }
+}
+@media(min-width:701px){
+  .featured-viewport{overflow-x:auto!important;overflow-y:hidden!important;touch-action:auto!important;scrollbar-width:thin!important;}
+  .featured-track,#featured,#newArrivals,#hotDeals{transform:none!important;transition:none!important;}
+}
+
+@media(max-width:700px){
+  .similar-track{display:flex!important;flex-flow:row nowrap!important;width:max-content!important;min-width:max-content!important;transform:none!important;transition:none!important;will-change:auto!important;}
+  .similar-card{flex:0 0 min(78vw,292px)!important;width:min(78vw,292px)!important;min-width:min(78vw,292px)!important;}
+}
