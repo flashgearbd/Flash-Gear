@@ -14,7 +14,7 @@ This package is based on the previous V21 storefront and contains a focused fron
 - Conflicting mobile `overflow:hidden`, transform-based carousel, and pointer-capture rules are overridden at the end of the stylesheet.
 
 ## Backend
-No Apps Script backend change is required for these fixes. The existing API URL remains in `app-v21.js`.
+No Apps Script backend change is required for these fixes. The existing API URL remains in `app-v25.js`.
 
 ## Verification performed
 - JavaScript syntax checked with Node.js.
@@ -25,3 +25,15 @@ No Apps Script backend change is required for these fixes. The existing API URL 
 
 ## Important
 This is a frontend/storefront update. The existing Google Apps Script deployment and Spreadsheet do not need to be replaced for these particular fixes.
+
+
+## V25 touch/search repair
+This build replaces the home product rails with native browser horizontal scrolling on mobile. It removes JS pointer-drag handling from those rails and adds explicit header search form navigation to products.html?q=... . Apps Script backend is unchanged.
+
+
+V25 verification notes:
+- Header search uses the native GET form as the primary path: products.html?q=... .
+- Product catalog reads q from URLSearchParams and filters name/category/brand/description.
+- Home product rails use native horizontal scrolling; no pointer-capture or JS drag handling.
+- Final mobile CSS sets touch-action:auto!important and overflow-x:auto!important on the rails.
+- V25 uses new app-v25.js and style-v25.css filenames to avoid stale V21/V22/V23 assets.
