@@ -1,4 +1,4 @@
-# FLASH GEAR BD V26 — V7.1 Search Reference + Premium UI Polish
+# FLASH GEAR BD V27 — V7.1 Search Reference + Premium UI Polish
 
 This build starts from the supplied V25 storefront and uses the supplied V7.1 storefront as the visual reference for the top search bar.
 
@@ -14,8 +14,8 @@ This build starts from the supplied V25 storefront and uses the supplied V7.1 st
 ## Verification
 - JavaScript syntax checked.
 - CSS braces/comments balanced.
-- All HTML asset references updated to `app-v26.js` and `style-v26.css`.
+- All HTML asset references updated to `app-v27.js` and `style-v27.css`.
 - Backend files compared byte-for-byte with the supplied V25 package.
 - Frontend JavaScript compared byte-for-byte with the supplied V25 package.
-- HTML content compared byte-for-byte with V25 except for the intentional V26 asset filename changes.
+- HTML content compared byte-for-byte with V25 except for the intentional V27 asset filename changes.
 - Final ZIP contents inspected after creation.
