@@ -1,20 +1,5 @@
-# FLASH GEAR BD V16 — COMPLETE BUGFIX PACKAGE
+FLASH GEAR BD — V17 CONFIRMED MOBILE OVERLAP FIX
 
-## Cloudflare deployment
+Changes: removed mobile Search dock item; separated mobile hamburger from search row; removed hero top/side overlay and limited blending to bottom; improved Explore Categories contrast; stabilized empty-cart state so it does not scroll; preserved existing Apps Script API/backend.
 
-This storefront is a **root-level Workers Static Assets** project. Do not put it inside `public/`.
-
-Cloudflare build command:
-
-    npx wrangler deploy
-
-Repository root: `/`
-Build output directory: leave blank.
-
-The root must contain `index.html` and `wrangler.jsonc` directly.
-
-`backend/` contains the Google Apps Script source and Product Manager. It is excluded from Cloudflare static asset upload by `.assetsignore`.
-
-## Product management
-
-Products are NOT uploaded in Cloudflare. They are managed through the Google Apps Script Product Manager connected to the Google Sheet. See `backend/README.md`.
+Deploy the contents at repository root to Cloudflare Workers.

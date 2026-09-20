@@ -103,8 +103,8 @@ function updateCartUI(){
   document.querySelectorAll("[data-cart-subtotal]").forEach(e=>e.textContent=money(subtotal));
   document.querySelectorAll("[data-cart-delivery]").forEach(e=>e.textContent=(c.length&&fee===0)?"FREE":money(c.length?fee:0));
   const b=document.querySelector("#cartBody");if(!b)return;
-  if(!c.length){b.innerHTML=`<div class="cart-empty"><div><i class="fa-solid fa-cart-shopping" aria-hidden="true"></i></div><h3>Your cart is empty</h3><p>Add a product to start your order.</p><a class="btn btn-blue" href="products.html">Browse Products</a></div>`;document.querySelector("#cartCheckout")?.setAttribute("hidden","");document.querySelector('#cartCheckoutSummary')?.setAttribute('hidden','');return;}
-  document.querySelector("#cartCheckout")?.removeAttribute("hidden");document.querySelector('#cartCheckoutSummary')?.removeAttribute('hidden');
+  if(!c.length){b.classList.add('is-empty');b.innerHTML=`<div class="cart-empty"><div><i class="fa-solid fa-cart-shopping" aria-hidden="true"></i></div><h3>Your cart is empty</h3><p>Add a product to start your order.</p><a class="btn btn-blue" href="products.html">Browse Products</a></div>`;document.querySelector("#cartCheckout")?.setAttribute("hidden","");document.querySelector('#cartCheckoutSummary')?.setAttribute('hidden','');return;}
+  b.classList.remove('is-empty');document.querySelector("#cartCheckout")?.removeAttribute("hidden");document.querySelector('#cartCheckoutSummary')?.removeAttribute('hidden');
   b.innerHTML=c.map(i=>`<div class="cart-item"><div><strong>${escapeHtml(i.name)}</strong><span>${money(i.price)} each</span></div><div class="cart-item-actions"><button data-cart-minus="${escapeHtml(i.id)}" aria-label="Decrease ${escapeHtml(i.name)}">−</button><b>${i.qty}</b><button data-cart-plus="${escapeHtml(i.id)}" aria-label="Increase ${escapeHtml(i.name)}">+</button><button class="cart-remove" data-cart-remove="${escapeHtml(i.id)}" aria-label="Remove ${escapeHtml(i.name)}">×</button></div></div>`).join("");
   updateCheckoutButtonState();
 }

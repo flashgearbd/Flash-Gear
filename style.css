@@ -1164,198 +1164,75 @@ body.has-product-buybar{padding-bottom:82px}
   *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
 }
 
-
 /* ==========================================================
-   FLASH GEAR BD V15 — MOBILE OVERLAP + HERO STABILITY PATCH
-   ========================================================== */
-html,body{max-width:100%;overflow-x:hidden}
-img,svg,video,canvas{max-width:100%}
-.hero-v9{isolation:isolate;background:#f7f5f0}
-.hero-v9 .hero-bg{z-index:0;background-image:linear-gradient(90deg,rgba(237,249,255,.88) 0%,rgba(237,249,255,.58) 34%,rgba(237,249,255,.16) 62%,rgba(237,249,255,0) 78%),url("hero-tech.webp");background-size:cover;background-repeat:no-repeat;background-position:center right;animation:none}
-.hero-v9:after{content:"";position:absolute;left:0;right:0;bottom:0;height:120px;background:linear-gradient(to bottom,rgba(247,245,240,0),#f7f5f0 96%);z-index:1;pointer-events:none;opacity:1}
-.hero-v9 .hero-content{z-index:2}
-.cart-body:has(.cart-empty){overflow:hidden;display:flex;align-items:stretch;justify-content:center}
-.cart-body:has(.cart-empty) .cart-empty{position:sticky;inset:auto 0 0;width:100%;min-height:100%;margin:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px 20px 36px;box-sizing:border-box}
-.cart-body:has(.cart-empty) .cart-empty h3{margin:12px 0 8px}
-.cart-body:has(.cart-empty) .cart-empty p{margin:0 0 20px}
-.cart-body:has(.cart-empty) .cart-empty .btn{flex:0 0 auto}
-
-@media(max-width:700px){
-  body{padding-bottom:88px!important}
-  .header{z-index:1000}
-  .header-main{overflow:visible}
-  .search{z-index:101}
-  .search-suggestions{z-index:1200}
-  .hero-v9{min-height:475px;margin-top:0;border-radius:0 0 28px 28px;overflow:hidden}
-  .hero-v9 .hero-bg{background-image:linear-gradient(90deg,rgba(237,249,255,.82) 0%,rgba(237,249,255,.48) 36%,rgba(237,249,255,.10) 67%,rgba(237,249,255,0) 82%),url("hero-tech.webp");background-position:67% center;background-size:cover}
-  .hero-v9:after{height:105px;background:linear-gradient(to bottom,rgba(247,245,240,0),#f7f5f0 98%)}
-  .fg-mobile-nav{grid-template-columns:repeat(3,1fr)!important;z-index:14000!important}
-  .fg-mobile-nav a,.fg-mobile-nav button{min-width:0}
-  .fg-wa-float{bottom:84px!important;z-index:13000!important}
-  .footer{padding-bottom:104px!important}
-  .cart-drawer{z-index:15000!important}
-  .cart-panel{z-index:15001}
-  .cart-body:has(.cart-empty){min-height:180px;overflow:hidden}
-  .cart-body:has(.cart-empty) .cart-empty{min-height:100%;padding:24px 18px 30px}
-  .cart-checkout-form{position:relative;z-index:2}
-  .cart-foot{position:relative;z-index:3}
-  .product-card,.section-head,.v9-category-card,.trust-item{min-width:0}
-  .section-head>div{min-width:0}
-  .section-head h2{overflow-wrap:anywhere}
-}
-
-@media(max-width:390px){
-  .hero-v9{min-height:450px}
-  .hero-v9 .hero-content{min-height:450px}
-  .hero-v9 .hero-bg{background-position:66% center}
-}
-
-
-/* ==========================================================
-   FLASH GEAR BD V16 — REAL MOBILE LAYOUT FIXES
-   Fixes: header/menu overlap, hero visibility, empty-cart
-   positioning, Explore Categories contrast, mobile dock.
+   FLASH GEAR BD — CONFIRMED MOBILE OVERLAP FIX
    ========================================================== */
 @media (max-width:700px){
-  /* Header: reserve two real rows so the hamburger never sits on the search bar. */
+  /* Header: keep menu/cart on row 1 and search completely below it. */
   .header-main{
-    min-height:110px!important;
-    height:110px!important;
-    box-sizing:border-box!important;
-    grid-template-columns:42px minmax(0,1fr) 42px!important;
-    grid-template-rows:42px 44px!important;
-    column-gap:8px!important;
-    row-gap:8px!important;
-    align-items:center!important;
-    overflow:visible!important;
-    padding:8px 12px!important;
-  }
-  .fg-menu-trigger{
-    grid-column:1!important;
-    grid-row:1!important;
-    width:42px!important;
-    height:42px!important;
-    margin:0!important;
-    z-index:20!important;
-  }
-  .brand{
-    grid-column:2!important;
-    grid-row:1!important;
-    width:auto!important;
-    margin:0!important;
-    align-self:center!important;
-    justify-self:center!important;
-    z-index:20!important;
-  }
-  .brand img{width:142px!important;height:42px!important;margin:0!important}
-  .cart{
-    grid-column:3!important;
-    grid-row:1!important;
-    width:42px!important;
-    height:42px!important;
-    margin:0!important;
-    z-index:20!important;
-  }
-  .search{
-    grid-column:1 / -1!important;
-    grid-row:2!important;
-    width:100%!important;
-    height:44px!important;
-    min-height:44px!important;
-    margin:0!important;
-    z-index:10!important;
-  }
-  .search input{height:42px!important;line-height:42px!important}
-
-  /* Hero image is shown without a top/side colour wash. Only its bottom edge blends. */
-  .hero-v9{
     position:relative!important;
-    min-height:475px!important;
-    background:#eef8fd!important;
-    overflow:hidden!important;
-    isolation:isolate!important;
+    min-height:116px!important;
+    height:116px!important;
+    grid-template-columns:44px minmax(0,1fr) 44px!important;
+    grid-template-rows:62px 48px!important;
+    gap:6px!important;
+    padding:0!important;
+    overflow:visible!important;
   }
+  .header-main .brand{grid-column:2!important;grid-row:1!important;justify-self:center!important;align-self:center!important;z-index:3!important}
+  .header-main .cart{grid-column:3!important;grid-row:1!important;align-self:center!important;z-index:5!important}
+  .header-main .search{grid-column:1/-1!important;grid-row:2!important;width:100%!important;height:46px!important;margin:0!important;align-self:center!important;z-index:2!important}
+  .fg-menu-trigger{position:absolute!important;left:0!important;top:11px!important;transform:none!important;width:42px!important;height:42px!important;z-index:6!important;margin:0!important}
+
+  /* Hero: preserve the actual image; only blend at the bottom. */
   .hero-v9 .hero-bg{
-    position:absolute!important;
-    inset:0!important;
-    z-index:0!important;
     background-image:url("hero-tech.webp")!important;
-    background-repeat:no-repeat!important;
     background-size:cover!important;
+    background-repeat:no-repeat!important;
     background-position:center center!important;
     animation:none!important;
   }
-  .hero-v9:before{display:none!important}
-  .hero-v9:after{
-    content:""!important;
-    position:absolute!important;
-    left:0!important;right:0!important;bottom:0!important;
-    height:92px!important;
-    z-index:1!important;
-    pointer-events:none!important;
-    background:linear-gradient(to bottom,rgba(255,255,255,0),#fff 96%)!important;
+  .hero-v9::after{
+    content:"";
+    position:absolute;
+    left:0;right:0;bottom:0;height:25%;
+    z-index:1;pointer-events:none;
+    background:linear-gradient(to bottom,rgba(247,245,240,0),#f7f5f0 92%);
   }
-  .hero-v9 .hero-content{position:relative!important;z-index:2!important}
-  .hero-v9 .hero-copy h1,
-  .hero-v9 .hero-copy p,
-  .hero-v9 .hero-sub,
-  .hero-v9 .eyebrow{ text-shadow:0 2px 12px rgba(255,255,255,.42)!important }
-
-  /* Make the secondary hero CTA readable against the hero image. */
+  .hero-v9 .hero-content{position:relative;z-index:2}
+  .hero-v9 .hero-glow{z-index:1}
   .hero-v9 .btn-hero-light{
-    background:rgba(255,255,255,.94)!important;
-    color:#087fdf!important;
-    border:1px solid rgba(8,127,223,.24)!important;
-    box-shadow:0 8px 22px rgba(7,62,105,.16)!important;
+    background:#fff!important;
+    color:#056fbe!important;
+    border:2px solid #fff!important;
+    box-shadow:0 10px 26px rgba(0,55,110,.22)!important;
     text-shadow:none!important;
   }
+  .hero-v9 .btn-hero-light i{color:#056fbe!important}
 
-  /* Empty cart is a fixed-height static section, not a sticky item inside a scrolling body. */
-  .cart-body:has(.cart-empty){
-    flex:0 0 clamp(270px,34dvh,330px)!important;
-    height:clamp(270px,34dvh,330px)!important;
-    min-height:270px!important;
-    max-height:330px!important;
+  /* Empty cart: this state itself does not scroll or move. */
+  .cart-body.is-empty{
     overflow:hidden!important;
-    padding:0!important;
+    overscroll-behavior:none!important;
     display:block!important;
-    box-sizing:border-box!important;
   }
-  .cart-body:has(.cart-empty) .cart-empty{
-    position:static!important;
-    width:100%!important;
+  .cart-body.is-empty .cart-empty{
+    position:relative!important;
+    inset:auto!important;
+    transform:none!important;
+    min-height:270px!important;
     height:100%!important;
-    min-height:0!important;
-    margin:0!important;
-    padding:18px 18px 22px!important;
-    box-sizing:border-box!important;
     display:flex!important;
     flex-direction:column!important;
     align-items:center!important;
-    justify-content:center!important;
-    overflow:hidden!important;
+    justify-content:flex-start!important;
+    padding:52px 20px 24px!important;
+    margin:0!important;
   }
-  .cart-body:has(.cart-empty) .cart-empty>div{font-size:46px!important}
-  .cart-body:has(.cart-empty) .cart-empty h3{margin:9px 0 6px!important}
-  .cart-body:has(.cart-empty) .cart-empty p{margin:0 0 15px!important}
-  .cart-body:has(.cart-empty) .cart-empty .btn{flex:0 0 auto!important}
+  .cart-body.is-empty .cart-empty>div{margin:0 0 12px!important}
+  .cart-body.is-empty .cart-empty h3{margin:0 0 8px!important}
+  .cart-body.is-empty .cart-empty p{margin:0 0 20px!important}
 
-  /* Keep customer information independently scrollable below the empty state. */
-  .cart-checkout-form{
-    flex:1 1 auto!important;
-    min-height:0!important;
-    max-height:none!important;
-    overflow:auto!important;
-    -webkit-overflow-scrolling:touch!important;
-  }
-
-  /* The dock has exactly three destinations. */
-  .fg-mobile-nav{
-    grid-template-columns:repeat(3,minmax(0,1fr))!important;
-    height:64px!important;
-  }
-}
-
-@media (min-width:701px){
-  .hero-v9:after{height:100px!important;background:linear-gradient(to bottom,rgba(255,255,255,0),#fff 97%)!important}
+  /* Three-item dock only. */
+  .fg-mobile-nav{grid-template-columns:repeat(3,1fr)!important}
 }
