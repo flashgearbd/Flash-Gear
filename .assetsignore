@@ -1,0 +1,8 @@
+wrangler.jsonc
+package.json
+README.md
+.assetsignore
+node_modules/
+.wrangler/
+*.zip
+*.log
