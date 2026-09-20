@@ -1163,3 +1163,49 @@ body.has-product-buybar{padding-bottom:82px}
   html{scroll-behavior:auto}
   *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
 }
+
+
+/* ==========================================================
+   FLASH GEAR BD V15 — MOBILE OVERLAP + HERO STABILITY PATCH
+   ========================================================== */
+html,body{max-width:100%;overflow-x:hidden}
+img,svg,video,canvas{max-width:100%}
+.hero-v9{isolation:isolate;background:#f7f5f0}
+.hero-v9 .hero-bg{z-index:0;background-image:linear-gradient(90deg,rgba(237,249,255,.88) 0%,rgba(237,249,255,.58) 34%,rgba(237,249,255,.16) 62%,rgba(237,249,255,0) 78%),url("hero-tech.webp");background-size:cover;background-repeat:no-repeat;background-position:center right;animation:none}
+.hero-v9:after{content:"";position:absolute;left:0;right:0;bottom:0;height:120px;background:linear-gradient(to bottom,rgba(247,245,240,0),#f7f5f0 96%);z-index:1;pointer-events:none;opacity:1}
+.hero-v9 .hero-content{z-index:2}
+.cart-body:has(.cart-empty){overflow:hidden;display:flex;align-items:stretch;justify-content:center}
+.cart-body:has(.cart-empty) .cart-empty{position:sticky;inset:auto 0 0;width:100%;min-height:100%;margin:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px 20px 36px;box-sizing:border-box}
+.cart-body:has(.cart-empty) .cart-empty h3{margin:12px 0 8px}
+.cart-body:has(.cart-empty) .cart-empty p{margin:0 0 20px}
+.cart-body:has(.cart-empty) .cart-empty .btn{flex:0 0 auto}
+
+@media(max-width:700px){
+  body{padding-bottom:88px!important}
+  .header{z-index:1000}
+  .header-main{overflow:visible}
+  .search{z-index:101}
+  .search-suggestions{z-index:1200}
+  .hero-v9{min-height:475px;margin-top:0;border-radius:0 0 28px 28px;overflow:hidden}
+  .hero-v9 .hero-bg{background-image:linear-gradient(90deg,rgba(237,249,255,.82) 0%,rgba(237,249,255,.48) 36%,rgba(237,249,255,.10) 67%,rgba(237,249,255,0) 82%),url("hero-tech.webp");background-position:67% center;background-size:cover}
+  .hero-v9:after{height:105px;background:linear-gradient(to bottom,rgba(247,245,240,0),#f7f5f0 98%)}
+  .fg-mobile-nav{grid-template-columns:repeat(3,1fr)!important;z-index:14000!important}
+  .fg-mobile-nav a,.fg-mobile-nav button{min-width:0}
+  .fg-wa-float{bottom:84px!important;z-index:13000!important}
+  .footer{padding-bottom:104px!important}
+  .cart-drawer{z-index:15000!important}
+  .cart-panel{z-index:15001}
+  .cart-body:has(.cart-empty){min-height:180px;overflow:hidden}
+  .cart-body:has(.cart-empty) .cart-empty{min-height:100%;padding:24px 18px 30px}
+  .cart-checkout-form{position:relative;z-index:2}
+  .cart-foot{position:relative;z-index:3}
+  .product-card,.section-head,.v9-category-card,.trust-item{min-width:0}
+  .section-head>div{min-width:0}
+  .section-head h2{overflow-wrap:anywhere}
+}
+
+@media(max-width:390px){
+  .hero-v9{min-height:450px}
+  .hero-v9 .hero-content{min-height:450px}
+  .hero-v9 .hero-bg{background-position:66% center}
+}
