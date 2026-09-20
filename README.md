@@ -19,3 +19,6 @@ This build starts from the supplied V25 storefront and uses the supplied V7.1 st
 - Frontend JavaScript compared byte-for-byte with the supplied V25 package.
 - HTML content compared byte-for-byte with V25 except for the intentional V27 asset filename changes.
 - Final ZIP contents inspected after creation.
+
+
+V30 changes: exact search suggestions (max 5, no unrelated fallback matches), New Arrivals capped at 6, Hot Deals capped at 10, Featured capped at 5, and all three rails advance one card then wait 2.5 seconds before the next card, looping indefinitely.
