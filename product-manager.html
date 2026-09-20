@@ -40,9 +40,10 @@ textarea{min-height:90px}.row{display:flex;gap:9px}.row>*{flex:1}
     <h2 class="title">Find Product</h2>
     <p class="sub">Search by Product ID or product name. Load it, edit it, then save.</p>
     <div class="searchbox">
-      <input id="search" placeholder="Example: FG-0001">
+      <input id="search" placeholder="Product ID or name">
       <button class="btn primary" id="find">Search</button>
     </div>
+    <label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12px"><input id="includeInactive" type="checkbox" style="width:auto"> Include inactive products (PIN required)</label>
     <div id="searchStatus" class="status"></div>
   </div>
 
@@ -102,16 +103,28 @@ textarea{min-height:90px}.row{display:flex;gap:9px}.row>*{flex:1}
       </div>
 
       <div class="full">
-        <label>Product Image</label>
-        <label class="upload">
-          <input id="image" type="file" accept="image/*">
-          <strong>＋ Choose Product Image</strong>
-          <span>Image is uploaded to Google Drive automatically.</span>
-        </label>
+        <label>Product Images</label>
+        <div class="grid">
+          <label class="upload"><input id="image" type="file" accept="image/*"><strong>＋ Main Image</strong><span>Google Drive</span></label>
+          <label class="upload"><input id="image2" type="file" accept="image/*"><strong>＋ Image 2</strong><span>Optional</span></label>
+          <label class="upload"><input id="image3" type="file" accept="image/*"><strong>＋ Image 3</strong><span>Optional</span></label>
+        </div>
         <div id="preview" class="preview"><img id="previewImg" alt="Product preview"></div>
-        <div class="hint">The saved Image URL is generated automatically and stored in the Products sheet.</div>
+        <div class="hint">Images are uploaded to the FLASH GEAR BD Google Drive product folder.</div>
       </div>
 
+      <div>
+        <label>Warranty</label>
+        <input id="warranty" placeholder="Example: 6 Months">
+      </div>
+      <div>
+        <label>Colour</label>
+        <input id="color" placeholder="Example: Black">
+      </div>
+      <div>
+        <label>Featured</label>
+        <select id="featured"><option value="false">No</option><option value="true">Yes — Featured</option></select>
+      </div>
       <div class="full">
         <label>Description</label>
         <textarea id="description"></textarea>
@@ -137,7 +150,7 @@ textarea{min-height:90px}.row{display:flex;gap:9px}.row>*{flex:1}
 
 <script>
 const $=id=>document.getElementById(id);
-let imageData='';
+let imageData='', imageData2='', imageData3='';
 
 function showStatus(el,msg,type){
   el.className='status '+type;
@@ -165,18 +178,8 @@ function readFile(file){
   });
 }
 
-$('image').addEventListener('change',async e=>{
-  const file=e.target.files[0];
-  if(!file)return;
-  try{
-    imageData=await readFile(file);
-    $('previewImg').src=imageData;
-    $('preview').style.display='block';
-  }catch(err){
-    imageData='';
-    alert('Could not process this image.');
-  }
-});
+async function bindImageInput(id,key){$(id).addEventListener('change',async e=>{const file=e.target.files[0];if(!file)return;try{const data=await readFile(file);if(key===1)imageData=data;if(key===2)imageData2=data;if(key===3)imageData3=data;if(key===1){$('previewImg').src=data;$('preview').style.display='block';}}catch(err){if(key===1)imageData='';if(key===2)imageData2='';if(key===3)imageData3='';alert('Could not process this image.');}})}
+bindImageInput('image',1);bindImageInput('image2',2);bindImageInput('image3',3);
 
 function fill(p){
   if(!p){
@@ -191,6 +194,9 @@ function fill(p){
   $('mrp').value=p.mrp??'';
   $('stock').value=p.stock??0;
   $('description').value=p.description||'';
+  $('warranty').value=p.warranty||'';
+  $('color').value=p.color||'';
+  $('featured').value=String(p.featured)==='true'?'true':'false';
   $('active').value=(String(p.status||'Active').toLowerCase()==='inactive')?'false':'true';
   imageData='';
   $('preview').style.display='none';
@@ -202,11 +208,12 @@ function fill(p){
 $('find').addEventListener('click',async()=>{
   const q=$('search').value.trim();
   if(!q)return;
+  if($('includeInactive').checked && !$('pin').value.trim()){showStatus($('searchStatus'),'Enter the Manager PIN to include inactive products.','err');return;}
   $('find').disabled=true;
   showStatus($('searchStatus'),'Searching…','ok');
   try{
     const r=await new Promise((resolve,reject)=>{
-      google.script.run.withSuccessHandler(resolve).withFailureHandler(reject).searchProducts(q);
+      google.script.run.withSuccessHandler(resolve).withFailureHandler(reject).searchProducts(q,$('includeInactive').checked?$('pin').value:'');
     });
     if(r && r.length) fill(r[0]);
     else showStatus($('searchStatus'),'No matching product found.','err');
@@ -236,9 +243,14 @@ $('form').addEventListener('submit',async e=>{
     mrp:$('mrp').value,
     stock:$('stock').value,
     description:$('description').value,
+    warranty:$('warranty').value,
+    color:$('color').value,
+    featured:$('featured').value==='true',
     active:$('active').value==='true',
     pin:$('pin').value,
-    imageData:imageData
+    imageData:imageData,
+    imageData2:imageData2,
+    imageData3:imageData3
   };
 
   try{
@@ -247,8 +259,8 @@ $('form').addEventListener('submit',async e=>{
     });
     showStatus($('status'),'✓ '+(r.updated?'Product updated. ':'Product saved. ')+'ID: '+r.id,'ok');
     $('id').value=r.id;
-    imageData='';
-    $('image').value='';
+    imageData=''; imageData2=''; imageData3='';
+    $('image').value='';$('image2').value='';$('image3').value='';
     $('preview').style.display='none';
   }catch(err){
     showStatus($('status'),'✕ '+(err.message||'Could not save product.'),'err');
@@ -261,8 +273,8 @@ $('form').addEventListener('submit',async e=>{
 $('clear').addEventListener('click',()=>{
   $('form').reset();
   $('active').value='true';
-  imageData='';
-  $('image').value='';
+  imageData=''; imageData2=''; imageData3='';
+  $('image').value='';$('image2').value='';$('image3').value='';
   $('preview').style.display='none';
   $('status').className='status';
   $('status').style.display='none';

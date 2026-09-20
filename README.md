@@ -1,36 +1,25 @@
-# FLASH GEAR BD — Mobile Product Manager Update
+# FLASH GEAR BD — Clean Production Build
 
-This version adds a phone-friendly Product Manager to the existing Google Sheets product system.
+## Website
+Cloudflare Pages/Workers serves only the `public/` directory. Do not change `assets.directory` away from `./public`.
 
-## What it does
-- Open the Apps Script Web App with `?admin=1`.
-- Add a product from an Android phone.
-- Choose a product image directly from the phone gallery/camera.
-- The browser resizes the image to a web-friendly maximum of 1400px and WebP quality.
-- The image is saved into a Google Drive folder named `FLASH GEAR BD Product Images`.
-- The returned image URL is automatically written into the `Image URL` column.
-- Product information is automatically appended to the `Products` sheet.
-- Category, warranty, description, featured and active status are included.
+## Apps Script
+Upload `google-apps-script.gs` into the Apps Script project as `Code.gs`.
+Add `product-manager.html` as an **HTML file** in the same Apps Script project because the manager uses `google.script.run`.
 
-## One-time setup
-1. Open your existing Apps Script project attached to the Products spreadsheet.
-2. Replace the old `google-apps-script.gs` code with the new code in this package.
-3. Add a new Apps Script HTML file named exactly `product-manager` and paste the contents of `product-manager.html`.
-4. The Apps Script manager now uses a strong numeric PIN. Keep the manager URL and PIN private. The current PIN is supplied separately with this build.
-5. Deploy the Web App again as the same deployment: Execute as **Me**, Who has access **Anyone**.
-6. Open your existing `/exec` URL followed by `?admin=1` to open the mobile Product Manager.
+Run `setupStore()` once after pasting the backend. On the first run it creates a new secure admin PIN and returns it in the execution result. Keep that PIN private. The old PIN should not be reused because it was previously exposed.
 
-The normal `/exec` URL still returns the JSON API for the website.
+Set the Apps Script project timezone to **Asia/Dhaka** in Project Settings.
 
-## Sheet columns
-Product ID, Product Name, Category, Brand, Price, MRP, Stock, Warranty, Image URL, Description, Featured, Active
+After deploying the Apps Script Web App, make sure `public/app.js` contains the current `/exec` URL.
+
+## Store Settings
+In the `Settings` sheet, fill these when available:
+- Store Email — receives new-order email alerts
+- bKash Number
+- Nagad Number
+- Business Address
+- Business Hours
 
 ## Important
-The Product Manager is protected by the PIN in Apps Script. Keep the manager URL and PIN private. Google Drive sharing is set to Anyone with the link so the public website can display uploaded product images.
-
-
-### Editable announcement
-Create an optional Google Sheet tab named `Settings` with columns `Key` and `Value`. Add a row with `Announcement` in column A and the announcement text in column B. The website reads it from the Apps Script API.
-
-## V7 Premium Upgrade
-See `README_V7.md` for the V7 changes and required Apps Script PIN setup.
+The backend re-checks current prices and stock at checkout. It creates the official Order ID before WhatsApp opens. Transaction IDs for bKash/Nagad are recorded for manual checking; there is no automatic payment verification.

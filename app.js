@@ -62,14 +62,15 @@ async function syncCartPrices(timeoutMs=2500){
     if(Array.isArray(fresh)&&fresh.length){
       const map=new Map(fresh.map(p=>[String(p.id),p]));
       const c=current.map(i=>{const p=map.get(String(i.id));return p?{...i,name:p.name,price:Number(p.price||0)}:null;}).filter(Boolean);
-      saveCart(c);return c;
+      saveCart(c,false);return c;
     }
   }catch{}
   return getCart();
 }
 
 function getCart(){try{return JSON.parse(localStorage.getItem("fg_cart")||"[]")}catch{return []}}
-function saveCart(c){localStorage.setItem("fg_cart",JSON.stringify(c));updateCartUI()}
+function saveCart(c,resetReference=true){localStorage.setItem("fg_cart",JSON.stringify(c));if(resetReference){try{localStorage.removeItem("fg_order_client_reference")}catch{}}updateCartUI()}
+function getClientReference(){try{let r=localStorage.getItem("fg_order_client_reference");if(!r){r="FGREF-"+Date.now().toString(36).toUpperCase()+"-"+Math.random().toString(36).slice(2,8).toUpperCase();localStorage.setItem("fg_order_client_reference",r);}return r}catch{return "FGREF-"+Date.now().toString(36).toUpperCase()}}
 function stockQty(v){if(typeof v==='number')return Number.isFinite(v)?Math.max(0,v):0;const raw=String(v??'').trim(),t=raw.toLowerCase();if(raw==='')return 0;if(t==='in stock'||t==='available')return Infinity;if(t==='out of stock'||t==='unavailable'||t==='sold out')return 0;const m=t.match(/\d+/);return m?Number(m[0]):0}
 function hasStock(p){return stockQty(p?.stock)>0}
 function stockLabel(v){const n=stockQty(v);if(n===0)return "Out of Stock";if(n===Infinity)return "In Stock";if(n<=3)return `Only ${n} left`;return "In Stock"}
@@ -93,7 +94,7 @@ function showCartAddedToast(p){
 }
 function removeFromCart(id){saveCart(getCart().filter(i=>i.id!==id));openCart()}
 function changeQty(id,d){const c=getCart(),x=c.find(i=>i.id===id);if(!x)return;if(d>0){const max=stockQty(x.stock);if(max>0&&Number(x.qty||0)>=max){showCheckoutError(`Only ${max} available.`);return;}}x.qty+=d;if(x.qty<=0)return removeFromCart(id);saveCart(c);openCart()}
-function clearCartAfterOrder(){localStorage.removeItem('fg_cart');['#checkoutName','#checkoutPhone','#checkoutAddress','#checkoutArea','#checkoutPayment','#checkoutTransaction'].forEach(sel=>{const el=document.querySelector(sel);if(el){if(el.tagName==='SELECT')el.selectedIndex=0;else el.value='';el.classList.remove('fg-phone-invalid','fg-input-error');}});const msg=document.querySelector('#checkoutPhoneError');if(msg){msg.hidden=true;msg.textContent='';}updateCartUI();updateCheckoutButtonState();}
+function clearCartAfterOrder(){localStorage.removeItem('fg_cart');try{localStorage.removeItem('fg_order_client_reference')}catch{}['#checkoutName','#checkoutPhone','#checkoutAddress','#checkoutArea','#checkoutPayment','#checkoutTransaction'].forEach(sel=>{const el=document.querySelector(sel);if(el){if(el.tagName==='SELECT')el.selectedIndex=0;else el.value='';el.classList.remove('fg-phone-invalid','fg-input-error');}});const msg=document.querySelector('#checkoutPhoneError');if(msg){msg.hidden=true;msg.textContent='';}updateCartUI();updateCheckoutButtonState();}
 function updateCartUI(){
   const c=getCart(),count=c.reduce((s,i)=>s+i.qty,0),subtotal=c.reduce((s,i)=>s+i.price*i.qty,0),fee=checkoutDeliveryFee(),total=subtotal+(c.length?fee:0);
   document.querySelectorAll("[data-cart-count]").forEach(e=>e.textContent=count);
@@ -106,7 +107,8 @@ function updateCartUI(){
   b.innerHTML=c.map(i=>`<div class="cart-item"><div><strong>${escapeHtml(i.name)}</strong><span>${money(i.price)} each</span></div><div class="cart-item-actions"><button data-cart-minus="${escapeHtml(i.id)}" aria-label="Decrease ${escapeHtml(i.name)}">−</button><b>${i.qty}</b><button data-cart-plus="${escapeHtml(i.id)}" aria-label="Increase ${escapeHtml(i.name)}">+</button><button class="cart-remove" data-cart-remove="${escapeHtml(i.id)}" aria-label="Remove ${escapeHtml(i.name)}">×</button></div></div>`).join("");
   updateCheckoutButtonState();
 }
-function checkoutPhoneIsValid(v){return /^01\d{9}$/.test(String(v||'').replace(/\s+/g,''));}
+function normalizeBdPhone(v){let x=String(v||'').replace(/[\s()-]/g,'');if(/^\+?88/.test(x))x=x.replace(/^\+?88/,'');return x;}
+function checkoutPhoneIsValid(v){return /^01[3-9]\d{8}$/.test(normalizeBdPhone(v));}
 function checkoutDeliveryFee(){
   const c=getCart(), count=c.reduce((s,i)=>s+Number(i.qty||0),0), subtotal=c.reduce((s,i)=>s+Number(i.price||0)*Number(i.qty||0),0);
   const area=document.querySelector('#checkoutArea')?.value||'Inside Chattogram City';
@@ -136,9 +138,10 @@ function updateCheckoutButtonState(){
   if(btn.dataset.submitting!=='1') btn.textContent=valid?'Confirm Order →':'Complete details to confirm';
 }
 function toggleTransactionField(){
-  const p=document.querySelector('#checkoutPayment'),tx=document.querySelector('#checkoutTransaction'); if(!p||!tx)return;
+  const p=document.querySelector('#checkoutPayment'),tx=document.querySelector('#checkoutTransaction'),info=document.querySelector('#paymentInstructions'); if(!p||!tx)return;
   const show=p.value!=='COD'; tx.hidden=!show; tx.required=show;
-  if(!show)tx.value='';
+  if(!show){tx.value='';if(info){info.hidden=true;info.innerHTML='';}}
+  else if(info){const s=window.FG_SETTINGS||{};const number=p.value==='bKash'?s.bkashNumber:s.nagadNumber;info.hidden=false;info.innerHTML=number?`<strong>${p.value}</strong><br>Send payment to <b>${escapeHtml(number)}</b><br><small>After payment, enter the Transaction ID below. Transaction IDs are checked manually.</small>`:`<strong>${p.value}</strong><br><small>Payment number is not configured yet. Please contact FLASH GEAR BD before paying.</small>`;}
 }
 function bindCheckoutValidation(){
   ['#checkoutName','#checkoutPhone','#checkoutAddress','#checkoutArea','#checkoutPayment','#checkoutTransaction'].forEach(sel=>{
@@ -157,7 +160,7 @@ function validateCheckoutPhone(showError=true){
   if(!el||!msg)return false;
   const value=el.value.replace(/\s+/g,''); el.value=value;
   const valid=checkoutPhoneIsValid(value),hasInput=value.length>0;
-  if(hasInput&&!valid){el.classList.add('fg-phone-invalid');msg.hidden=false;msg.textContent='Enter a valid Bangladesh mobile number (11 digits).';}
+  if(hasInput&&!valid){el.classList.add('fg-phone-invalid');msg.hidden=false;msg.textContent='Enter a valid Bangladesh mobile number (01XXXXXXXXX or +8801XXXXXXXXX).';}
   else{el.classList.remove('fg-phone-invalid');msg.hidden=true;msg.textContent='';}
   if(showError&&hasInput&&!valid)el.focus(); return valid;
 }
@@ -171,12 +174,12 @@ function ensureCartDrawer(){
       <div class="cart-checkout-form">
         <div class="checkout-section-title">Customer information</div>
         <label class="sr-only" for="checkoutName">Name</label><input id="checkoutName" placeholder="Full Name" autocomplete="name" maxlength="80">
-        <label class="sr-only" for="checkoutPhone">Phone</label><input id="checkoutPhone" name="fg-customer-phone" placeholder="Phone — 11 digits" inputmode="numeric" autocomplete="tel" maxlength="11" pattern="01[0-9]{9}" aria-describedby="checkoutPhoneError">
+        <label class="sr-only" for="checkoutPhone">Phone</label><input id="checkoutPhone" name="fg-customer-phone" placeholder="Phone — 11 digits" inputmode="numeric" autocomplete="tel" maxlength="14" pattern="(?:\+?88)?01[3-9][0-9]{8}" aria-describedby="checkoutPhoneError">
         <div id="checkoutPhoneError" class="fg-phone-error" role="alert" hidden></div>
         <label class="sr-only" for="checkoutAddress">Address</label><textarea id="checkoutAddress" name="fg-delivery-address" placeholder="Delivery Address" autocomplete="street-address" maxlength="180" rows="2"></textarea>
         <label class="sr-only" for="checkoutArea">Delivery Area</label><select id="checkoutArea"><option value="Inside Chattogram City">Inside Chattogram City — ৳50</option><option value="Outside Chattogram">Outside Chattogram — ৳120</option></select>
         <label class="sr-only" for="checkoutPayment">Payment</label><select id="checkoutPayment"><option value="COD">Cash on Delivery</option><option value="bKash">bKash</option><option value="Nagad">Nagad</option></select>
-        <input id="checkoutTransaction" placeholder="Transaction ID (bKash/Nagad only)" maxlength="60" autocomplete="off" hidden>
+        <div id="paymentInstructions" class="payment-instructions" hidden></div><input id="checkoutTransaction" placeholder="Transaction ID (bKash/Nagad only)" maxlength="60" autocomplete="off" hidden>
         <p class="checkout-help">Your final delivery charge and stock are verified when you confirm.</p>
       </div>
       <div class="cart-foot">
@@ -189,12 +192,14 @@ function ensureCartDrawer(){
   </div>`);
   bindCheckoutValidation(); updateCartUI();
 }
-function showOrderSuccess(result){
+function showOrderSuccess(result,waUrl){
   let el=document.querySelector('#fgOrderSuccess');
-  if(!el){document.body.insertAdjacentHTML('beforeend',`<div id="fgOrderSuccess" class="fg-order-success" role="status" aria-live="polite"><div class="fg-order-success-card"><div class="fg-success-icon">✓</div><span class="eyebrow">FLASH GEAR BD</span><h2>Order Confirmed</h2><p>Your order has been saved successfully.</p><strong class="fg-order-id"></strong><span class="fg-order-total"></span><small>Opening WhatsApp with your order details…</small></div></div>`);el=document.querySelector('#fgOrderSuccess');}
+  if(!el){document.body.insertAdjacentHTML('beforeend',`<div id="fgOrderSuccess" class="fg-order-success" role="status" aria-live="polite"><div class="fg-order-success-card"><div class="fg-success-icon">✓</div><span class="eyebrow">FLASH GEAR BD</span><h2>Order Confirmed</h2><p>Your order has been saved successfully.</p><strong class="fg-order-id"></strong><span class="fg-order-total"></span><div class="fg-success-actions"><a class="btn btn-blue" data-open-whatsapp target="_blank" rel="noopener">Open WhatsApp</a><a class="btn btn-soft" href="products.html">Continue Shopping</a></div><small>Order saved first. You can now send the same order to WhatsApp.</small></div></div>`);el=document.querySelector('#fgOrderSuccess');}
   el.querySelector('.fg-order-id').textContent='Order ID: '+(result?.orderId||'Confirmed');
   el.querySelector('.fg-order-total').textContent='Total: '+money(result?.total||0);
+  const waBtn=el.querySelector('[data-open-whatsapp]'); if(waBtn){waBtn.href=waUrl||wa();}
   el.hidden=false; requestAnimationFrame(()=>el.classList.add('show'));
+  return el;
 }
 
 function openCart(){ensureCartDrawer();const d=document.querySelector("#cartDrawer");d.hidden=false;document.body.classList.add("drawer-open");requestAnimationFrame(()=>d.classList.add("is-open"));updateCartUI();syncCartPrices(1800).catch(()=>{});}
@@ -221,9 +226,9 @@ function renderHomeRows(products=[]){const valid=Array.isArray(products)?product
 async function loadAnnouncement(){const el=document.querySelector('#announcementText');if(!el)return;if(window.FG_ANNOUNCEMENT){el.textContent=window.FG_ANNOUNCEMENT;return;}el.textContent=el.textContent||'FLASH GEAR BD • Good Quality • Best Price • Reliable Service';}
 function setupAnnouncement(){const bar=document.querySelector('#announcementBar'),close=document.querySelector('#announcementClose');if(!bar)return;try{if(localStorage.getItem('fg_announcement_dismissed')==='1')bar.hidden=true;}catch{}close?.addEventListener('click',()=>{bar.hidden=true;try{localStorage.setItem('fg_announcement_dismissed','1')}catch{}});}
 function showProductNotFound(){const root=document.querySelector('#productDetail');if(!root)return;root.innerHTML=`<div class="product-not-found"><div class="not-found-icon">⌕</div><h1>Product Not Found</h1><p>This product may have been removed or the link is no longer valid.</p><a class="btn btn-blue" href="products.html">Browse All Products</a></div>`;document.title='Product Not Found | FLASH GEAR BD';}
-function updateProductSEO(p){if(!p)return;document.title=`${p.name} | FLASH GEAR BD`;let canonical=document.querySelector('link[rel="canonical"]');if(canonical)canonical.href=location.href;let m=document.querySelector('meta[name="description"]');if(!m){m=document.createElement('meta');m.name='description';document.head.appendChild(m);}m.content=(p.description||`Buy ${p.name} from FLASH GEAR BD with clear pricing, warranty and WhatsApp ordering.`).slice(0,155);['og:title','og:description'].forEach((prop,i)=>{let el=document.querySelector(`meta[property=\"${prop}\"]`);if(!el){el=document.createElement('meta');el.setAttribute('property',prop);document.head.appendChild(el);}el.content=i===0?`${p.name} | FLASH GEAR BD`:m.content;});let og=document.querySelector('meta[property=\"og:image\"]');if(og)og.content=p.image?imageUrl(p.image):'hero-tech.webp';let tw=document.querySelector('meta[name=\"twitter:title\"]');if(tw)tw.content=`${p.name} | FLASH GEAR BD`;let td=document.querySelector('meta[name=\"twitter:description\"]');if(td)td.content=m.content;let ti=document.querySelector('meta[name=\"twitter:image\"]');if(ti)ti.content=p.image?imageUrl(p.image):'hero-tech.webp';let old=document.querySelector('#product-jsonld');if(old)old.remove();const ld=document.createElement('script');ld.type='application/ld+json';ld.id='product-jsonld';ld.textContent=JSON.stringify({"@context":"https://schema.org","@type":"Product",name:p.name,brand:p.brand?{"@type":"Brand",name:p.brand}:undefined,offers:{"@type":"Offer",price:Number(p.price||0),priceCurrency:"BDT",availability:String(p.stock||'').toLowerCase()==='out of stock'?"https://schema.org/OutOfStock":"https://schema.org/InStock",url:location.href}});document.head.appendChild(ld);}
+function updateProductSEO(p){if(!p)return;document.title=`${p.name} | FLASH GEAR BD`;let canonical=document.querySelector('link[rel="canonical"]');if(canonical)canonical.href=location.href;let m=document.querySelector('meta[name="description"]');if(!m){m=document.createElement('meta');m.name='description';document.head.appendChild(m);}m.content=(p.description||`Buy ${p.name} from FLASH GEAR BD with clear pricing, warranty and WhatsApp ordering.`).slice(0,155);['og:title','og:description'].forEach((prop,i)=>{let el=document.querySelector(`meta[property=\"${prop}\"]`);if(!el){el=document.createElement('meta');el.setAttribute('property',prop);document.head.appendChild(el);}el.content=i===0?`${p.name} | FLASH GEAR BD`:m.content;});let og=document.querySelector('meta[property=\"og:image\"]');if(og)og.content=p.image?imageUrl(p.image):'https://gear.flashgearbd.workers.dev/hero-tech.webp';let tw=document.querySelector('meta[name=\"twitter:title\"]');if(tw)tw.content=`${p.name} | FLASH GEAR BD`;let td=document.querySelector('meta[name=\"twitter:description\"]');if(td)td.content=m.content;let ti=document.querySelector('meta[name=\"twitter:image\"]');if(ti)ti.content=p.image?imageUrl(p.image):'https://gear.flashgearbd.workers.dev/hero-tech.webp';let old=document.querySelector('#product-jsonld');if(old)old.remove();const ld=document.createElement('script');ld.type='application/ld+json';ld.id='product-jsonld';ld.textContent=JSON.stringify({"@context":"https://schema.org","@type":"Product",name:p.name,brand:p.brand?{"@type":"Brand",name:p.brand}:undefined,offers:{"@type":"Offer",price:Number(p.price||0),priceCurrency:"BDT",availability:hasStock(p)?"https://schema.org/InStock":"https://schema.org/OutOfStock",url:location.href}});document.head.appendChild(ld);}
 function renderProductPage(p){
-  const root=document.querySelector('#productDetail'); if(!root||!p)return; updateProductSEO(p); rememberViewed(p);
+  const root=document.querySelector('#productDetail'); if(!root||!p)return; window.FG_CURRENT_PRODUCT=p; updateProductSEO(p); rememberViewed(p);
   const price=Number(p.price||0), mrp=Number(p.mrp||0), discount=mrp>price?Math.round((1-price/mrp)*100):0;
   const isPhone=['Mobile Phones','Feature Phone'].includes(String(p.category||''));
   const label=isPhone?'Specifications':'Product Description';
@@ -249,6 +254,8 @@ function renderProductPage(p){
     <section class="section recent-viewed-section"><div class="section-head"><div><span class="eyebrow">YOUR HISTORY</span><h2>Recently Viewed</h2></div><a href="products.html">View All →</a></div><div class="featured-slider"><button class="featured-arrow prev" type="button" data-recent-prev aria-label="Previous recently viewed">‹</button><div class="featured-viewport"><div id="recentViewed" class="featured-track"></div></div><button class="featured-arrow next" type="button" data-recent-next aria-label="Next recently viewed">›</button></div></section>
     <section class="similar-section"><div class="section-head"><div><span class="eyebrow">YOU MAY ALSO LIKE</span><h2>Similar Products</h2></div><a href="products.html?cat=${encodeURIComponent(p.category||'')}">See All →</a></div><div class="similar-viewport"><div id="similarTrack" class="similar-track"></div><button class="similar-arrow prev" type="button" data-similar-prev aria-label="Previous">‹</button><button class="similar-arrow next" type="button" data-similar-next aria-label="Next">›</button></div></section>`;
   root.querySelectorAll('[data-detail-image]').forEach(btn=>btn.addEventListener('click',()=>{const img=root.querySelector('#detailMainImage');if(!img)return;img.src=imageUrl(btn.dataset.detailImage);img.dataset.originalSrc=btn.dataset.detailImage;img.dataset.driveId=driveId(btn.dataset.detailImage);root.querySelectorAll('.detail-thumb').forEach(x=>x.classList.remove('active'));btn.classList.add('active');}));
+  const sticky=document.querySelector('#fgMobileBuyBar'); if(sticky) sticky.remove();
+  if(hasStock(p)){ document.body.insertAdjacentHTML('beforeend',`<div id="fgMobileBuyBar" class="fg-mobile-buybar" aria-label="Quick purchase"><div><small>${escapeHtml(stockLabel(p.stock))}</small><strong>${money(price)}</strong></div><button type="button" class="btn btn-soft" data-add-product="${escapeHtml(p.id)}">Add</button><button type="button" class="btn btn-blue" data-buy-now="${escapeHtml(p.id)}">Buy Now</button></div>`); }
   const recent=getRecentViewed().filter(x=>String(x.id)!==String(p.id)).slice(0,10);const rt=document.querySelector('#recentViewed');if(rt){rt.innerHTML=recent.length?recent.map((x,i)=>productCard(x,i)).join(''):'<div class="no-results">Products you open will appear here.</div>';rt._products=recent;setupRailSlider('#recentViewed','[data-recent-prev]','[data-recent-next]',4800);}
   setupSimilarProducts(p); window.scrollTo({top:0,behavior:'instant'});
 }
@@ -384,16 +391,18 @@ function readCachedProducts(){try{const x=JSON.parse(localStorage.getItem(CACHE_
 function writeCachedProducts(data){try{localStorage.setItem(CACHE_KEY,JSON.stringify({time:Date.now(),data}))}catch{}}
 async function fetchProducts(){
   if(!CONFIG.productsApiUrl||CONFIG.productsApiUrl.includes("PASTE_"))return CONFIG.fallbackProducts;
-  const controller=new AbortController(); const timer=setTimeout(()=>controller.abort(),2200);
-  try{const r=await fetch(CONFIG.productsApiUrl,{cache:"no-store",signal:controller.signal});if(!r.ok)throw Error(r.status);const raw=await r.json();const payload=normalizeApiPayload(raw);writeCachedProducts(payload.products);if(payload.announcement){window.FG_ANNOUNCEMENT=payload.announcement;}return payload.products}catch(e){return readCachedProducts()||CONFIG.fallbackProducts}finally{clearTimeout(timer)}
+  const controller=new AbortController(); const timer=setTimeout(()=>controller.abort(),10000);
+  try{const r=await fetch(CONFIG.productsApiUrl,{cache:"no-store",signal:controller.signal});if(!r.ok)throw Error('HTTP '+r.status);const raw=await r.json();const payload=normalizeApiPayload(raw);window.FG_PRODUCTS_LOAD_ERROR=null;writeCachedProducts(payload.products);if(payload.announcement){window.FG_ANNOUNCEMENT=payload.announcement;}return payload.products}catch(e){window.FG_PRODUCTS_LOAD_ERROR=e;return readCachedProducts()||CONFIG.fallbackProducts}finally{clearTimeout(timer)}
 }
-async function loadProductsFast(onData){
+async function loadProductsFast(onData,onDone){
   const cached=readCachedProducts();
-  if(cached?.length)onData(cached,true);
+  if(cached)onData(cached,true);
   const fresh=await fetchProducts();
-  if(Array.isArray(fresh)&&fresh.length)onData(fresh,false);
+  if(Array.isArray(fresh))onData(fresh,false);
+  if(onDone)onDone({products:fresh,error:window.FG_PRODUCTS_LOAD_ERROR||null,hadCache:Array.isArray(cached)});
   return fresh;
 }
+function showProductLoadError(){const root=document.querySelector('#productDetail');if(!root)return;root.innerHTML=`<div class="product-not-found product-load-error"><div class="not-found-icon">↻</div><h1>Couldn't load products</h1><p>The store connection took too long or failed. Your link is still valid.</p><button class="btn btn-blue" type="button" id="retryProducts">Tap to Retry</button></div>`;document.getElementById('retryProducts')?.addEventListener('click',()=>{const apply=window.FG_APPLY_PRODUCTS;if(apply){root.innerHTML='<div class="product-loading">Loading product…</div>';apply.retry();}});}
 
 function closeSearchSuggestions(except=null){
   document.querySelectorAll('.search-suggestions').forEach(box=>{if(box!==except){box.hidden=true;box.innerHTML='';}});
@@ -437,7 +446,6 @@ function setupSearchSuggestions(products){
       }).slice(0,5);
 
       if(!matches.length){
-        if(q&&all.length&&CONFIG.productsApiUrl){try{fetch(CONFIG.productsApiUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({type:'search',query:q}),mode:'no-cors',keepalive:true}).catch(()=>{});}catch{}}
         box.innerHTML=all.length?'<div class="suggest-empty">No matching product</div>':'<div class="suggest-empty">Finding products…</div>';
         box.hidden=false;
         return;
@@ -487,23 +495,25 @@ function setupInteractions(products){
     // Intercept real product links so the cached product snapshot is saved before navigation.
     // This makes product pages open immediately instead of waiting for the Google Apps Script API.
     const productLink=e.target.closest?.(".product-card-link,.similar-link");
+    if(window.FG_SUPPRESS_CARD_CLICK_UNTIL && Date.now()<window.FG_SUPPRESS_CARD_CLICK_UNTIL){window.FG_SUPPRESS_CARD_CLICK_UNTIL=0;if(e.target.closest('.product-card-link,.similar-link')){e.preventDefault();e.stopPropagation();return;}}
     if(productLink && !e.defaultPrevented && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey){
       const id=productLink.getAttribute("href")?.match(/[?&]id=([^&]+)/)?.[1];
       const list=window.FG_PRODUCTS||products||[];
       const p=list.find(x=>String(x.id)===decodeURIComponent(id||""));
       if(p){e.preventDefault();e.stopPropagation();openProductPage(p);return;}
     }
-    if(window.FG_SUPPRESS_CARD_CLICK_UNTIL && Date.now()<window.FG_SUPPRESS_CARD_CLICK_UNTIL){window.FG_SUPPRESS_CARD_CLICK_UNTIL=0;if(e.target.closest('.product-card-link,.similar-link')){e.preventDefault();e.stopPropagation();return;}}
     const buy=e.target.closest("[data-buy-now]");
-    if(buy){e.preventDefault();e.stopPropagation();const p=(window.FG_PRODUCTS||products).find(x=>String(x.id)===String(buy.dataset.buyNow));const q=Math.max(1,parseInt(document.querySelector("#detailQty")?.value||"1",10)||1);if(p&&hasStock(p)){addToCart(p,q,buy);openCart();}return;}
+    if(buy){e.preventDefault();e.stopPropagation();const p=[...(window.FG_PRODUCTS||products||[]),window.FG_CURRENT_PRODUCT].filter(Boolean).find(x=>String(x.id)===String(buy.dataset.buyNow));const q=Math.max(1,parseInt(document.querySelector("#detailQty")?.value||"1",10)||1);if(p&&hasStock(p)){addToCart(p,q,buy);openCart();}return;}
     const dminus=e.target.closest("[data-detail-minus]"),dplus=e.target.closest("[data-detail-plus]");
     if(dminus||dplus){const inp=document.querySelector("#detailQty");if(inp){let q=Math.max(1,parseInt(inp.value||"1",10)||1);q+=dplus?1:-1;inp.value=Math.max(1,q)}return;}
     const add=e.target.closest("[data-add-product]");
     if(add){
       e.preventDefault();e.stopPropagation();
-      const list=window.FG_PRODUCTS||products;
-      const p=list.find(x=>String(x.id)===String(add.dataset.addProduct));
-      if(p&&hasStock(p)){const q=Math.max(1,parseInt(document.querySelector("#detailQty")?.value||"1",10)||1);addToCart(p,q,add);} 
+      const owner=add.closest('#recentViewed,#featured,#newArrivals,#hotDeals,#catalog,#similarTrack');
+      const localList=owner?owner._products:[];
+      const candidates=[...localList,...(window.FG_PRODUCTS||[]),window.FG_CURRENT_PRODUCT].filter(Boolean);
+      const p=candidates.find(x=>String(x.id)===String(add.dataset.addProduct));
+      if(p&&hasStock(p)){const detailAction=!!add.closest('.detail-actions');const q=detailAction?Math.max(1,parseInt(document.querySelector('#detailQty')?.value||'1',10)||1):1;addToCart(p,q,add);}
       return;
     }
     const minus=e.target.closest("[data-cart-minus]");
@@ -526,23 +536,23 @@ function setupInteractions(products){
       if(!name||!checkoutPhoneIsValid(phone)||!address||!payment||(payment!=='COD'&&!transactionId)){
         ['#checkoutName','#checkoutPhone','#checkoutAddress','#checkoutPayment'].forEach(sel=>{const el=document.querySelector(sel);if(el&&!String(el.value||'').trim()){el.classList.add('fg-input-error');setTimeout(()=>el.classList.remove('fg-input-error'),1200);}});
         if(!checkoutPhoneIsValid(phone))validateCheckoutPhone(true);
-        showCheckoutError(!checkoutPhoneIsValid(phone)?'Check Number — use exactly 11 digits.':'Please complete the highlighted checkout fields.');
+        showCheckoutError(!checkoutPhoneIsValid(phone)?'Check Number — use a valid Bangladesh mobile number.':'Please complete the highlighted checkout fields.');
         updateCheckoutButtonState(); return;
       }
       const current=getCart(); if(!current.length){showCheckoutError('Your cart is empty.');updateCheckoutButtonState();return;}
-      const clientReference='FGREF-'+Date.now().toString(36).toUpperCase()+'-'+Math.random().toString(36).slice(2,7).toUpperCase();
+      const clientReference=getClientReference();
       btn.dataset.submitting='1'; btn.disabled=true; btn.textContent='Confirming Order…';
       const payload={action:'createOrder',clientReference,customerName:name,phone,address,deliveryArea:area,payment,transactionId,items:current.map(i=>({id:i.id,quantity:Number(i.qty||1)}))};
       try{
-        const res=await fetch(CONFIG.productsApiUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
+        const controller=new AbortController();const orderTimer=setTimeout(()=>controller.abort(),25000);let res;try{res=await fetch(CONFIG.productsApiUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload),signal:controller.signal});}finally{clearTimeout(orderTimer);}
         const text=await res.text(); let result=null; try{result=JSON.parse(text);}catch{throw new Error('The order service returned an invalid response.');}
         if(!res.ok||!result?.success)throw new Error(result?.error||'We could not save your order.');
         const confirmedItems=Array.isArray(result.items)&&result.items.length?result.items:current.map(i=>({...i,price:Number(i.price||0)}));
         const customer={name,phone,address,deliveryArea:area,payment,transactionId,deliveryFee:Number(result.deliveryFee||0),orderRef:result.orderId};
         const waUrl=waCart(confirmedItems,customer);
         clearCartAfterOrder();
-        showOrderSuccess(result);
-        setTimeout(()=>window.location.assign(waUrl),650);
+        showOrderSuccess(result,waUrl);
+        setTimeout(()=>{try{window.open(waUrl,'_blank','noopener');}catch(_){ }},500);
       }catch(err){
         btn.dataset.submitting=''; btn.disabled=false; btn.textContent='Confirm Order →';
         updateCheckoutButtonState();
@@ -655,26 +665,25 @@ function setupCatalog(products){
 
 function setupPremiumMobileNav(){if(document.querySelector('#fgMobileNav'))return;const path=location.pathname.toLowerCase();const active=path.includes('products')||path.includes('product.html')?'shop':path.includes('contact')?'support':'home';document.body.insertAdjacentHTML('beforeend',`<nav id="fgMobileNav" class="fg-mobile-nav" aria-label="Mobile navigation"><a class="${active==='home'?'is-active':''}" href="index.html"><span><i class="fa-solid fa-house" aria-hidden="true"></i></span><small>Home</small></a><a class="${active==='shop'?'is-active':''}" href="products.html"><span><i class="fa-solid fa-layer-group" aria-hidden="true"></i></span><small>Categories</small></a><button type="button" data-mobile-search aria-label="Search"><span><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i></span><small>Search</small></button><button type="button" data-cart-open aria-label="Open cart"><span><i class="fa-solid fa-cart-shopping" aria-hidden="true"></i><b data-cart-count>0</b></span><small>Cart</small></button><a class="${active==='support'?'is-active':''}" href="contact.html"><span><i class="fa-solid fa-headset" aria-hidden="true"></i></span><small>Support</small></a></nav>`);document.querySelector('[data-mobile-search]')?.addEventListener('click',()=>{const input=document.querySelector('.search input');input?.focus();input?.scrollIntoView({behavior:'smooth',block:'center'});});}
 
+async function loadPublicSettings(){try{const r=await fetch(CONFIG.productsApiUrl+'?action=settings',{cache:'no-store'});if(!r.ok)return;const j=await r.json();window.FG_SETTINGS=j.settings||{};if(window.FG_SETTINGS.whatsappNumber)CONFIG.whatsappNumber=String(window.FG_SETTINGS.whatsappNumber).replace(/^\+/,'');document.querySelectorAll('.wa-link').forEach(a=>{a.href=wa();a.target='_blank';a.rel='noopener'});const a=document.querySelector('#announcementText');if(a&&window.FG_SETTINGS.announcement)a.textContent=window.FG_SETTINGS.announcement;toggleTransactionField();document.querySelectorAll('[data-store-address]').forEach(e=>e.textContent=window.FG_SETTINGS.businessAddress||'Chattogram, Bangladesh');document.querySelectorAll('[data-store-hours]').forEach(e=>e.textContent=window.FG_SETTINGS.businessHours||'Contact us on WhatsApp for current support hours.');document.querySelectorAll('[data-store-phone]').forEach(e=>e.textContent=window.FG_SETTINGS.whatsappNumber||'');}catch{}}
+
 document.addEventListener("DOMContentLoaded",async()=>{
   setupPremiumMobileNav();
   document.querySelectorAll(".wa-link").forEach(a=>{a.href=wa();a.target="_blank";a.rel="noopener"});
   document.querySelectorAll("[data-facebook]").forEach(a=>a.href=CONFIG.facebook);document.querySelectorAll("[data-instagram]").forEach(a=>a.href=CONFIG.instagram);document.querySelectorAll("#year").forEach(e=>e.textContent=new Date().getFullYear());
-  ensureCartDrawer();updateCartUI(); setupSidebar(); setupAnnouncement(); setActiveNav(); loadAnnouncement();
+  ensureCartDrawer();updateCartUI(); setupSidebar(); setupAnnouncement(); setActiveNav(); loadAnnouncement(); loadPublicSettings();
   const earlyParams=new URLSearchParams(location.search);
   if(document.querySelector('#productDetail')){try{const fastRaw=sessionStorage.getItem('fg_open_product')||localStorage.getItem('fg_open_product_fast')||'';const cachedProduct=JSON.parse(fastRaw||'null');if(cachedProduct&&String(cachedProduct.id)===String(earlyParams.get('id')))renderProductPage(cachedProduct)}catch{}}
   let currentProducts=[];
-  const apply=data=>{if(window.FG_ANNOUNCEMENT){const a=document.querySelector('#announcementText');if(a)a.textContent=window.FG_ANNOUNCEMENT;}currentProducts=(Array.isArray(data)?data:[]).map(p=>({...p,color:String(p?.color??p?.colour??p?.Colour??p?.Color??'').trim()}));window.FG_PRODUCTS=currentProducts;document.querySelectorAll("#fgSidebar [data-category]").forEach(a=>{a.style.display=currentProducts.some(p=>String(p.category)===String(a.dataset.category))?"":"none"});buildCategoryMenu(currentProducts);renderCategories(currentProducts);renderV9CategoryRail(currentProducts);renderHomeRows(currentProducts);renderCategoryHeroCount(currentProducts);const featured=currentProducts.filter(p=>p.featured);if(document.querySelector("#featured"))renderFeaturedProducts((featured.length?featured:currentProducts).slice(0,10));setupCatalog(currentProducts);setupSearchSuggestions(currentProducts); window.FG_REFRESH_SUGGESTIONS?.();};
+  const productPageId=new URLSearchParams(location.search).get('id');
+  const syncProductPage=()=>{if(!document.querySelector('#productDetail')||!productPageId)return false;const p=(window.FG_PRODUCTS||[]).find(x=>String(x.id)===String(productPageId));if(p){renderProductPage(p);return true;}return false;};
+  const apply=data=>{if(window.FG_ANNOUNCEMENT){const a=document.querySelector('#announcementText');if(a)a.textContent=window.FG_ANNOUNCEMENT;}currentProducts=(Array.isArray(data)?data:[]).map(p=>({...p,color:String(p?.color??p?.colour??p?.Colour??p?.Color??'').trim()}));window.FG_PRODUCTS=currentProducts;document.querySelectorAll("#fgSidebar [data-category]").forEach(a=>{a.style.display=currentProducts.some(p=>String(p.category)===String(a.dataset.category))?"":"none"});buildCategoryMenu(currentProducts);renderCategories(currentProducts);renderV9CategoryRail(currentProducts);renderHomeRows(currentProducts);renderCategoryHeroCount(currentProducts);const featured=currentProducts.filter(p=>p.featured);if(document.querySelector("#featured"))renderFeaturedProducts((featured.length?featured:currentProducts).slice(0,10));setupCatalog(currentProducts);setupSearchSuggestions(currentProducts);window.FG_REFRESH_SUGGESTIONS?.();syncProductPage();};
+  window.FG_APPLY_PRODUCTS={retry:()=>loadProductsFast(apply,finishProductLoad)};
+  const finishProductLoad=info=>{if(!document.querySelector('#productDetail')||!productPageId)return;if(syncProductPage())return;if(info?.error){showProductLoadError();return;}showProductNotFound();};
   setupInteractions(currentProducts);
-  // Never block first paint on Google Apps Script. Cached/snapshot data renders first;
-  // the network refresh updates prices/products in the background.
   const isProductPage=!!document.querySelector('#productDetail');
-  loadProductsFast(apply).catch(()=>{});
-  const params=new URLSearchParams(location.search);
-  if(document.querySelector('#productDetail')){
-    const id=params.get('id');
-    const findProduct=()=>{const p=(window.FG_PRODUCTS||[]).find(x=>String(x.id)===String(id));if(p)renderProductPage(p);return !!p};
-    if(!findProduct()){try{const cached=JSON.parse(sessionStorage.getItem('fg_open_product')||localStorage.getItem('fg_open_product_fast')||'null');if(cached&&String(cached.id)===String(id))renderProductPage(cached);else showProductNotFound()}catch{showProductNotFound()}}
-  }
+  if(isProductPage){try{const fastRaw=sessionStorage.getItem('fg_open_product')||localStorage.getItem('fg_open_product_fast')||'';const cachedProduct=JSON.parse(fastRaw||'null');if(cachedProduct&&String(cachedProduct.id)===String(productPageId))renderProductPage(cachedProduct);}catch{}}
+  loadProductsFast(apply,finishProductLoad).catch(()=>{if(isProductPage)showProductLoadError();});
 });
 
 window.addEventListener('popstate',()=>{const id=new URLSearchParams(location.search).get('id');const p=(window.FG_PRODUCTS||[]).find(x=>String(x.id)===String(id));if(p)renderProductPage(p)});
