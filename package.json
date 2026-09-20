@@ -1,9 +1,1 @@
-{
-  "private": true,
-  "scripts": {
-    "deploy": "wrangler deploy"
-  },
-  "devDependencies": {
-    "wrangler": "^4.135.0"
-  }
-}
+{"name":"flash-gear-bd-v20","private":true,"scripts":{"deploy":"wrangler deploy"}}

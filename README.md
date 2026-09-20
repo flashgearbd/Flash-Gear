@@ -1,15 +1,6 @@
-FLASH GEAR BD V19 — Mobile Carousel + Header Branding
+FLASH GEAR BD V21
 
-This package updates the V18 storefront with:
-- Dedicated gap between mobile search row and hero.
-- Mobile header branding: logo followed by FLASH GEAR BD text.
-- New Arrivals and Hot Deals rebuilt as non-overlapping infinite horizontal carousels.
-- Automatic smooth sliding with delay.
-- Finger swipe/drag support and product click support.
-- Existing Google Apps Script API/order/payment/stock logic preserved.
+Deploy the storefront files at repository root. Do not upload backend/ separately to Cloudflare.
+The backend folder contains the Apps Script source and mobile Product Manager source.
 
-Product Manager:
-- The mobile manager UI is included in backend/product-manager.html.
-- The live Apps Script manager remains at:
-  https://script.google.com/macros/s/AKfycbziRYes9_oZDi3uTAC09R8xo6OVRBq9RRxABkgcnmCW24rWyj5AocJQko_OBofvjaMI/exec?admin=1
-- Open that URL directly in Chrome on the phone; if Google shows an account/access page, use the same Google account that owns the Apps Script deployment.
+V21: cleaned single carousel engine for Featured/New Arrivals/Hot Deals; touch drag + autoplay + infinite looping; improved mobile header/hero readability; mobile Product Manager with PIN login, product list, edit/add/delete.
