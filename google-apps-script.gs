@@ -171,6 +171,13 @@ function saveProduct(data) {
   const row = findProductRow(sheet, product.productId);
   if (row === -1) return addProduct(data);
 
+  // Preserve existing image URLs when an edit does not upload replacement images.
+  // This prevents an edit to price/stock/name from accidentally removing product photos.
+  const existing = rowToProduct(sheet.getRange(row,1,1,PRODUCT_HEADERS.length).getValues()[0]);
+  if (!product.imageUrl) product.imageUrl = existing.imageUrl;
+  if (!product.imageUrl2) product.imageUrl2 = existing.imageUrl2;
+  if (!product.imageUrl3) product.imageUrl3 = existing.imageUrl3;
+
   const imageUrls = uploadManagerImages(data, product.productId);
   if (imageUrls[0]) product.imageUrl = imageUrls[0];
   if (imageUrls[1]) product.imageUrl2 = imageUrls[1];
@@ -307,7 +314,7 @@ function getPublicSettings(){const s=readSettings_();return {storeName:s['Store 
 function ensureHeaders(sheet,headers){if(sheet.getMaxColumns()<headers.length)sheet.insertColumnsAfter(sheet.getMaxColumns(),headers.length-sheet.getMaxColumns());const current=sheet.getRange(1,1,1,headers.length).getValues()[0];let changed=false;headers.forEach((h,i)=>{if(String(current[i]||'').trim()!==h){current[i]=h;changed=true;}});if(changed)sheet.getRange(1,1,1,headers.length).setValues([current]);sheet.getRange(1,1,1,headers.length).setFontWeight('bold');}
 function getSheet(name){const ss=SpreadsheetApp.openById(SPREADSHEET_ID),sheet=ss.getSheetByName(name);if(!sheet)throw new Error('Sheet not found: '+name);return sheet;}
 function findProductRow(sheet,id){id=String(id||'').trim().toLowerCase();if(!id)return -1;const lastRow=sheet.getLastRow();if(lastRow<2)return -1;const ids=sheet.getRange(2,1,lastRow-1,1).getDisplayValues();for(let i=0;i<ids.length;i++)if(String(ids[i][0]||'').trim().toLowerCase()===id)return i+2;return -1;}
-function rowToProduct(row){return {productId:String(row[0]||'').trim(),productName:String(row[1]||'').trim(),brand:String(row[2]||'').trim(),category:String(row[3]||'').trim(),description:String(row[4]||'').trim(),rp:Number(row[5]||0),mrp:Number(row[6]||0),stock:Number(row[7]||0),imageUrl:String(row[8]||'').trim(),status:String(row[9]||'Active').trim(),warranty:String(row[10]||'').trim(),color:String(row[11]||'').trim(),featured:Boolean(row[12]),imageUrl2:String(row[13]||'').trim(),imageUrl3:String(row[14]||'').trim()};}
+function rowToProduct(row){return {productId:String(row[0]||'').trim(),productName:String(row[1]||'').trim(),brand:String(row[2]||'').trim(),category:String(row[3]||'').trim(),description:String(row[4]||'').trim(),rp:Number(row[5]||0),mrp:Number(row[6]||0),stock:Number(row[7]||0),imageUrl:String(row[8]||'').trim(),status:String(row[9]||'Active').trim(),warranty:String(row[10]||'').trim(),color:String(row[11]||'').trim(),featured:(row[12]===true||String(row[12]||'').trim().toLowerCase()==='true'||String(row[12]||'').trim()==='1'),imageUrl2:String(row[13]||'').trim(),imageUrl3:String(row[14]||'').trim()};}
 function generateProductId(){const sheet=getSheet(PRODUCTS_SHEET);let number=Math.max(0,sheet.getLastRow()-1)+1,id;do{id='FG-'+String(number).padStart(4,'0');number++;}while(findProductRow(sheet,id)!==-1);return id;}
 function generateOrderId(){const stamp=Utilities.formatDate(new Date(),'Asia/Dhaka','yyyyMMdd-HHmmss');return 'FG-'+stamp+'-'+Math.floor(1000+Math.random()*9000);}
 function parseItems(items){if(typeof items==='string'){try{items=JSON.parse(items);}catch(_){throw new Error('Invalid order items.');}}if(!Array.isArray(items))throw new Error('Invalid order items.');return items;}

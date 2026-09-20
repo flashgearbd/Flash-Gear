@@ -151,6 +151,7 @@ textarea{min-height:90px}.row{display:flex;gap:9px}.row>*{flex:1}
 <script>
 const $=id=>document.getElementById(id);
 let imageData='', imageData2='', imageData3='';
+let existingImageUrl='', existingImageUrl2='', existingImageUrl3='';
 
 function showStatus(el,msg,type){
   el.className='status '+type;
@@ -189,7 +190,11 @@ function fill(p){
   $('id').value=p.id||'';
   $('name').value=p.name||'';
   $('brand').value=p.brand||'';
-  $('category').value=p.category||'Other';
+  const category=String(p.category||'Other');
+  if(![...$('category').options].some(o=>o.value===category)){
+    const opt=document.createElement('option'); opt.value=category; opt.textContent=category; $('category').appendChild(opt);
+  }
+  $('category').value=category;
   $('price').value=p.price??'';
   $('mrp').value=p.mrp??'';
   $('stock').value=p.stock??0;
@@ -198,8 +203,11 @@ function fill(p){
   $('color').value=p.color||'';
   $('featured').value=String(p.featured)==='true'?'true':'false';
   $('active').value=(String(p.status||'Active').toLowerCase()==='inactive')?'false':'true';
-  imageData='';
-  $('preview').style.display='none';
+  existingImageUrl=String(p.image||'');
+  existingImageUrl2=String(p.image2||'');
+  existingImageUrl3=String(p.image3||'');
+  imageData=''; imageData2=''; imageData3='';
+  if(existingImageUrl){$('previewImg').src=existingImageUrl;$('preview').style.display='block';}else{$('preview').style.display='none';}
   $('image').value='';
   showStatus($('searchStatus'),'Product loaded. You can edit and save it.','ok');
   window.scrollTo({top:$('form').offsetTop-8,behavior:'smooth'});
@@ -250,7 +258,10 @@ $('form').addEventListener('submit',async e=>{
     pin:$('pin').value,
     imageData:imageData,
     imageData2:imageData2,
-    imageData3:imageData3
+    imageData3:imageData3,
+    imageUrl:existingImageUrl,
+    imageUrl2:existingImageUrl2,
+    imageUrl3:existingImageUrl3
   };
 
   try{
@@ -259,6 +270,9 @@ $('form').addEventListener('submit',async e=>{
     });
     showStatus($('status'),'✓ '+(r.updated?'Product updated. ':'Product saved. ')+'ID: '+r.id,'ok');
     $('id').value=r.id;
+    existingImageUrl=String(r.product?.imageUrl||existingImageUrl||'');
+    existingImageUrl2=String(r.product?.imageUrl2||existingImageUrl2||'');
+    existingImageUrl3=String(r.product?.imageUrl3||existingImageUrl3||'');
     imageData=''; imageData2=''; imageData3='';
     $('image').value='';$('image2').value='';$('image3').value='';
     $('preview').style.display='none';
@@ -274,6 +288,7 @@ $('clear').addEventListener('click',()=>{
   $('form').reset();
   $('active').value='true';
   imageData=''; imageData2=''; imageData3='';
+  existingImageUrl=''; existingImageUrl2=''; existingImageUrl3='';
   $('image').value='';$('image2').value='';$('image3').value='';
   $('preview').style.display='none';
   $('status').className='status';

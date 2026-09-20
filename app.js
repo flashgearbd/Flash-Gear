@@ -259,7 +259,7 @@ function renderProductPage(p){
   const sticky=document.querySelector('#fgMobileBuyBar'); if(sticky) sticky.remove();
   if(hasStock(p)){ document.body.insertAdjacentHTML('beforeend',`<div id="fgMobileBuyBar" class="fg-product-buybar" aria-label="Quick purchase"><div class="fg-buy-price"><strong>${money(price)}</strong><small class="fg-buy-stock">${escapeHtml(stockLabel(p.stock))}</small></div><button type="button" class="btn btn-soft" data-add-product="${escapeHtml(p.id)}">Add</button><button type="button" class="btn btn-blue" data-buy-now="${escapeHtml(p.id)}">Buy Now</button></div>`); }
   const recent=getRecentViewed().filter(x=>String(x.id)!==String(p.id)).slice(0,10);const rt=document.querySelector('#recentViewed');if(rt){rt.innerHTML=recent.length?recent.map((x,i)=>productCard(x,i)).join(''):'<div class="no-results">Products you open will appear here.</div>';rt._products=recent;setupRailSlider('#recentViewed','[data-recent-prev]','[data-recent-next]',4800);}
-  setupSimilarProducts(p); window.scrollTo({top:0,behavior:'instant'});
+  setupSimilarProducts(p); window.scrollTo({top:0,behavior:'auto'});
 }
 function setupSimilarProducts(current){
   const track=document.querySelector('#similarTrack'); if(!track)return;
@@ -387,14 +387,19 @@ function productCard(p,index){
 }
 function renderProducts(list,id){const el=document.querySelector(id);if(!el)return;el._products=list;el.innerHTML=list.length?list.map((p,i)=>productCard(p,i)).join(""):`<div class="no-results"><div>⌕</div><h3>No products found</h3><p>Try another category or search.</p></div>`}
 
-function normalizeApiPayload(payload){if(Array.isArray(payload))return {products:payload,announcement:''};if(payload&&Array.isArray(payload.products))return {products:payload.products,announcement:String(payload.announcement||'')};return {products:[],announcement:''};}
-const CACHE_KEY="fg_products_cache_v7", CACHE_TTL=10*60*1000;
+function normalizeApiPayload(payload){
+  if(Array.isArray(payload))return {products:payload,announcement:''};
+  if(payload&&payload.success===false)throw new Error(String(payload.error||'Product API returned an error.'));
+  if(payload&&Array.isArray(payload.products))return {products:payload.products,announcement:String(payload.announcement||'')};
+  throw new Error('Product API returned an invalid response.');
+}
+const CACHE_KEY="fg_products_cache_v8", CACHE_TTL=60*1000;
 function readCachedProducts(){try{const x=JSON.parse(localStorage.getItem(CACHE_KEY)||"null");if(x&&Array.isArray(x.data)&&Number(x.time)>0){if(Date.now()-Number(x.time)<CACHE_TTL)return x.data;localStorage.removeItem(CACHE_KEY)}}catch{}return null}
 function writeCachedProducts(data){try{localStorage.setItem(CACHE_KEY,JSON.stringify({time:Date.now(),data}))}catch{}}
 async function fetchProducts(){
   if(!CONFIG.productsApiUrl||CONFIG.productsApiUrl.includes("PASTE_"))return CONFIG.fallbackProducts;
   const controller=new AbortController(); const timer=setTimeout(()=>controller.abort(),10000);
-  try{const r=await fetch(CONFIG.productsApiUrl,{cache:"default",signal:controller.signal});if(!r.ok)throw Error('HTTP '+r.status);const raw=await r.json();const payload=normalizeApiPayload(raw);window.FG_PRODUCTS_LOAD_ERROR=null;writeCachedProducts(payload.products);if(payload.announcement){window.FG_ANNOUNCEMENT=payload.announcement;}return payload.products}catch(e){window.FG_PRODUCTS_LOAD_ERROR=e;return readCachedProducts()||CONFIG.fallbackProducts}finally{clearTimeout(timer)}
+  try{const r=await fetch(CONFIG.productsApiUrl,{cache:"no-store",signal:controller.signal});if(!r.ok)throw Error('HTTP '+r.status);const raw=await r.json();const payload=normalizeApiPayload(raw);window.FG_PRODUCTS_LOAD_ERROR=null;writeCachedProducts(payload.products);if(payload.announcement){window.FG_ANNOUNCEMENT=payload.announcement;}return payload.products}catch(e){window.FG_PRODUCTS_LOAD_ERROR=e;return readCachedProducts()||CONFIG.fallbackProducts}finally{clearTimeout(timer)}
 }
 async function loadProductsFast(onData,onDone){
   const cached=readCachedProducts();

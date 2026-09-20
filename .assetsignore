@@ -2,6 +2,7 @@ wrangler.jsonc
 package.json
 README.md
 .assetsignore
+backend/
 node_modules/
 .wrangler/
 *.zip
