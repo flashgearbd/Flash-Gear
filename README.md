@@ -1,39 +1,21 @@
-# FLASH GEAR BD — V22 Touch & Search Fix
+# FLASH GEAR BD V26 — V7.1 Search Reference + Premium UI Polish
 
-This package is based on the previous V21 storefront and contains a focused frontend fix for the reported mobile issues.
+This build starts from the supplied V25 storefront and uses the supplied V7.1 storefront as the visual reference for the top search bar.
 
-## Fixed in V22
-- Header search now has an explicit submit handler and always routes to `products.html?q=...` instead of relying only on browser form behavior.
-- Featured, New Arrivals and Hot Deals use native horizontal scrolling on mobile. Android touch scrolling is handled by the browser rather than pointer-capture/transform dragging.
-- Vertical page scrolling remains available when the gesture is vertical.
-- Horizontal swipe/drag works naturally on touch screens.
-- Automatic sliding remains enabled for rails with 2+ products.
-- Infinite looping is implemented with duplicated product sets and scroll-position normalization.
-- Product-card clicks remain protected from accidental activation after a swipe.
-- Similar/recent product rails use the same touch-safe native scrolling approach.
-- Conflicting mobile `overflow:hidden`, transform-based carousel, and pointer-capture rules are overridden at the end of the stylesheet.
+## Scope of changes
+- Recreated the V7.1-style full pill search bar.
+- Premium focus/press/hover motion for the search bar and search suggestions.
+- Smooth, restrained UI motion for non-cart visible controls/cards.
+- Mobile search remains a full-width pill beneath the brand row.
+- Native GET search flow remains unchanged: `products.html?q=...`.
+- Cart markup, cart state, cart drawer, checkout and cart JavaScript were not modified.
+- Apps Script backend was not modified.
 
-## Backend
-No Apps Script backend change is required for these fixes. The existing API URL remains in `app-v25.js`.
-
-## Verification performed
-- JavaScript syntax checked with Node.js.
-- Source audit confirms the home rails no longer use JS pointer capture or JS transform dragging.
-- Final CSS audit confirms mobile rails use native horizontal overflow and `touch-action:auto`.
-- Search form has an explicit submit-to-products handler.
-- ZIP contents are rechecked after creation.
-
-## Important
-This is a frontend/storefront update. The existing Google Apps Script deployment and Spreadsheet do not need to be replaced for these particular fixes.
-
-
-## V25 touch/search repair
-This build replaces the home product rails with native browser horizontal scrolling on mobile. It removes JS pointer-drag handling from those rails and adds explicit header search form navigation to products.html?q=... . Apps Script backend is unchanged.
-
-
-V25 verification notes:
-- Header search uses the native GET form as the primary path: products.html?q=... .
-- Product catalog reads q from URLSearchParams and filters name/category/brand/description.
-- Home product rails use native horizontal scrolling; no pointer-capture or JS drag handling.
-- Final mobile CSS sets touch-action:auto!important and overflow-x:auto!important on the rails.
-- V25 uses new app-v25.js and style-v25.css filenames to avoid stale V21/V22/V23 assets.
+## Verification
+- JavaScript syntax checked.
+- CSS braces/comments balanced.
+- All HTML asset references updated to `app-v26.js` and `style-v26.css`.
+- Backend files compared byte-for-byte with the supplied V25 package.
+- Frontend JavaScript compared byte-for-byte with the supplied V25 package.
+- HTML content compared byte-for-byte with V25 except for the intentional V26 asset filename changes.
+- Final ZIP contents inspected after creation.
