@@ -995,3 +995,171 @@ body.drawer-open{overflow:hidden;overscroll-behavior:none}
   .fg-mobile-buybar .btn{padding:0 7px}
 }
 @media(min-width:701px){.fg-mobile-buybar{display:none!important}}
+
+/* ============================================================
+   FLASH GEAR BD V13 — MOBILE-FIRST SYSTEM
+   Final override layer. Keep this section small and intentional.
+   ============================================================ */
+:root{
+  --fg-blue:#0a8cff;
+  --fg-ink:#0b1220;
+  --fg-muted:#667085;
+  --fg-line:#e7edf4;
+  --fg-surface:#fff;
+  --fg-soft:#f5f8fc;
+  --fg-radius:16px;
+  --fg-shadow:0 10px 30px rgba(15,23,42,.08);
+}
+html{scroll-behavior:smooth;scroll-padding-top:90px}
+body{overflow-x:hidden}
+img{max-width:100%}
+button,a,input,select,textarea{touch-action:manipulation}
+button,.btn,.quick-add,.cart-item-actions button{min-height:44px}
+
+/* Fast, stable image boxes */
+.product-visual{aspect-ratio:1/1;contain:layout paint;background:#f7f9fc}
+.product-visual img{width:100%;height:100%;object-fit:contain}
+.product-card{contain:layout paint}
+.product-card h3{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+.product-card-link{height:100%}
+
+/* Mobile bottom navigation — one implementation */
+.fg-mobile-nav{
+  position:fixed;z-index:1200;left:10px;right:10px;bottom:10px;
+  display:none;grid-template-columns:repeat(4,1fr);gap:4px;
+  padding:7px;border:1px solid rgba(15,23,42,.08);
+  border-radius:20px;background:rgba(255,255,255,.96);
+  box-shadow:0 14px 40px rgba(15,23,42,.18);
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+}
+.fg-mobile-nav a,.fg-mobile-nav button{
+  border:0;background:transparent;color:#64748b;text-decoration:none;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:3px;border-radius:14px;padding:5px 3px;min-height:52px;font:inherit;
+}
+.fg-mobile-nav span{position:relative;display:grid;place-items:center;font-size:18px}
+.fg-mobile-nav small{font-size:10px;font-weight:700;line-height:1}
+.fg-mobile-nav .is-active{color:var(--fg-blue);background:#edf6ff}
+.fg-mobile-nav b{
+  position:absolute;top:-7px;right:-12px;min-width:17px;height:17px;
+  padding:0 4px;border-radius:999px;background:#0a8cff;color:#fff;
+  font-size:9px;display:grid;place-items:center;border:2px solid #fff;
+}
+
+/* Cleaner mobile checkout */
+.cart-panel{max-width:520px}
+.cart-checkout-form{
+  border-top:1px solid var(--fg-line);
+  padding-top:14px;
+}
+.cart-checkout-form input,.cart-checkout-form textarea,.cart-checkout-form select{
+  min-height:48px;border-radius:12px;
+}
+.checkout-section-title{
+  font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+  color:#475467;margin-bottom:9px;
+}
+.checkout-help{font-size:11px;line-height:1.45;color:var(--fg-muted);margin:8px 0 0}
+.payment-instructions{
+  margin:8px 0;padding:11px 12px;border:1px solid #b9dcff;
+  background:#f1f8ff;border-radius:12px;font-size:13px;line-height:1.45;
+}
+.cart-total{font-size:17px}
+.cart-total strong{font-size:21px}
+
+/* Product detail purchase bar */
+.fg-product-buybar{
+  position:fixed;z-index:1100;left:10px;right:10px;bottom:76px;
+  display:none;align-items:center;gap:9px;padding:9px;
+  background:rgba(255,255,255,.97);border:1px solid rgba(15,23,42,.08);
+  border-radius:18px;box-shadow:0 14px 40px rgba(15,23,42,.18);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+}
+.fg-product-buybar .fg-buy-price{min-width:74px;font-size:15px;font-weight:900;line-height:1.1}
+.fg-product-buybar .fg-buy-stock{font-size:10px;color:#667085;display:block;margin-top:2px}
+.fg-product-buybar .btn{flex:1;min-height:48px}
+.fg-product-buybar .fg-buy-wa{width:48px;padding:0;display:grid;place-items:center}
+
+body.has-mobile-bottom-nav{padding-bottom:78px}
+body.has-product-buybar{padding-bottom:82px}
+
+/* Search should be immediately usable on small screens */
+@media (max-width:700px){
+  html{scroll-padding-top:72px}
+  body{padding-bottom:76px}
+  .announcement-bar{font-size:11px;min-height:32px}
+  .topbar{display:none}
+  .header{position:sticky;top:0;z-index:1000}
+  .header-main{
+    display:grid;grid-template-columns:1fr auto;gap:8px;
+    padding:8px 12px 9px;
+  }
+  .brand img{height:31px;width:auto}
+  .cart{min-width:48px;padding:0 9px;border-radius:12px}
+  .cart span:not(.cart-badge){display:none}
+  .search{grid-column:1/-1;order:3;width:100%}
+  .search input{height:46px;border-radius:13px;padding-left:14px;font-size:14px}
+  .search button{width:46px}
+  .nav{display:none}
+
+  .hero.hero-v9{min-height:auto;margin:0}
+  .hero-content{padding:36px 18px 30px;min-height:470px}
+  .hero-copy{max-width:100%}
+  .hero-copy h1{font-size:clamp(39px,12vw,58px);line-height:.94}
+  .hero-sub{font-size:14px}
+  .hero-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .hero-actions .btn{min-height:48px;padding:0 12px;font-size:13px}
+  .hero-quick-links{overflow:auto;white-space:nowrap;justify-content:flex-start;max-width:100%;padding-bottom:3px}
+  .hero-slogan{display:none}
+
+  .section{padding:30px 0}
+  .container{width:min(100% - 24px,1180px)}
+  .section-head{gap:10px;margin-bottom:14px}
+  .section-head h2{font-size:21px}
+  .section-head>a{font-size:12px;white-space:nowrap}
+
+  .v9-category-scroll{display:flex;overflow-x:auto;gap:9px;padding:2px 2px 8px;scroll-snap-type:x proximity}
+  .v9-category-scroll>*{flex:0 0 auto;scroll-snap-align:start}
+  .featured-viewport{overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}
+  .featured-viewport::-webkit-scrollbar{display:none}
+  .featured-track{transform:none!important}
+  .featured-track .product-card{width:min(72vw,250px);flex:0 0 min(72vw,250px);scroll-snap-align:start}
+  .featured-arrow{display:none}
+
+  .trust-grid{grid-template-columns:repeat(2,1fr);gap:8px}
+  .trust-item{padding:12px 8px}
+  .trust-item strong{font-size:11px}
+  .trust-item small{font-size:9px}
+
+  .product-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .product-card{border-radius:14px}
+  .product-body{padding:9px 9px 4px}
+  .product-category{font-size:9px}
+  .product-card h3{font-size:12px;line-height:1.35;margin:3px 0}
+  .product-brand{font-size:10px}
+  .product-price{font-size:15px}
+  .product-bottom{padding:7px 9px 9px;gap:5px;font-size:9px}
+  .quick-add{min-height:38px;padding:0 10px;border-radius:10px;font-size:11px}
+
+  .footer{padding-bottom:88px}
+  .fg-mobile-nav{display:grid}
+  .fg-wa-float{bottom:134px;right:14px;width:48px;height:48px}
+  .fg-product-buybar{display:flex}
+  body.has-mobile-bottom-nav{padding-bottom:0}
+}
+
+/* Very small phones */
+@media (max-width:380px){
+  .container{width:calc(100% - 20px)}
+  .hero-content{padding-left:14px;padding-right:14px}
+  .hero-actions{grid-template-columns:1fr}
+  .product-grid{gap:8px}
+  .product-bottom{display:grid;grid-template-columns:1fr auto}
+  .stock-dot{grid-column:1/-1}
+}
+
+/* Reduced motion means no carousel/transform animation */
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}

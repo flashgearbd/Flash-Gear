@@ -22,6 +22,7 @@
   window.addEventListener('scroll',()=>{if(!ticking){ticking=true;requestAnimationFrame(update)}},{passive:true});
 })();
 
+/* V13 architecture: configuration → data/cache → cart/checkout → rendering → page setup. */
 const CONFIG = {
   productsApiUrl: "https://script.google.com/macros/s/AKfycbzCpbkkiI71eYs1GKhCtCyWLNuN6KyHfDHCuJo9gV97UV2MhUPn0yCvka4IrOmLSQTO/exec",
   whatsappNumber: "8801601093553",
@@ -141,7 +142,7 @@ function toggleTransactionField(){
   const p=document.querySelector('#checkoutPayment'),tx=document.querySelector('#checkoutTransaction'),info=document.querySelector('#paymentInstructions'); if(!p||!tx)return;
   const show=p.value!=='COD'; tx.hidden=!show; tx.required=show;
   if(!show){tx.value='';if(info){info.hidden=true;info.innerHTML='';}}
-  else if(info){const s=window.FG_SETTINGS||{};const number=p.value==='bKash'?s.bkashNumber:s.nagadNumber;info.hidden=false;info.innerHTML=number?`<strong>${p.value}</strong><br>Send payment to <b>${escapeHtml(number)}</b><br><small>After payment, enter the Transaction ID below. Transaction IDs are checked manually.</small>`:`<strong>${p.value}</strong><br><small>Payment number is not configured yet. Please contact FLASH GEAR BD before paying.</small>`;}
+  else if(info){const s=window.FG_SETTINGS||{};const number=p.value==='bKash'?s.bkashNumber:s.nagadNumber;info.hidden=false;info.innerHTML=number?`<strong>${p.value}</strong><br><span>Send payment to <b>${escapeHtml(number)}</b></span><br><small>Complete payment, then enter the Transaction ID below. We verify the transaction with your order.</small>`:`<strong>${p.value}</strong><br><small>Payment number is not configured yet. Please contact FLASH GEAR BD before paying.</small>`;}
 }
 function bindCheckoutValidation(){
   ['#checkoutName','#checkoutPhone','#checkoutAddress','#checkoutArea','#checkoutPayment','#checkoutTransaction'].forEach(sel=>{
@@ -204,6 +205,7 @@ function showOrderSuccess(result,waUrl){
 
 function openCart(){ensureCartDrawer();const d=document.querySelector("#cartDrawer");d.hidden=false;document.body.classList.add("drawer-open");requestAnimationFrame(()=>d.classList.add("is-open"));updateCartUI();syncCartPrices(1800).catch(()=>{});}
 function closeCart(){const d=document.querySelector("#cartDrawer");if(!d)return;d.classList.remove("is-open");setTimeout(()=>{d.hidden=true},180);document.body.classList.remove("drawer-open")}
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&document.querySelector("#cartDrawer.is-open"))closeCart()});
 
 function openProductPage(p){
   if(!p || !p.id)return;
@@ -255,7 +257,7 @@ function renderProductPage(p){
     <section class="similar-section"><div class="section-head"><div><span class="eyebrow">YOU MAY ALSO LIKE</span><h2>Similar Products</h2></div><a href="products.html?cat=${encodeURIComponent(p.category||'')}">See All →</a></div><div class="similar-viewport"><div id="similarTrack" class="similar-track"></div><button class="similar-arrow prev" type="button" data-similar-prev aria-label="Previous">‹</button><button class="similar-arrow next" type="button" data-similar-next aria-label="Next">›</button></div></section>`;
   root.querySelectorAll('[data-detail-image]').forEach(btn=>btn.addEventListener('click',()=>{const img=root.querySelector('#detailMainImage');if(!img)return;img.src=imageUrl(btn.dataset.detailImage);img.dataset.originalSrc=btn.dataset.detailImage;img.dataset.driveId=driveId(btn.dataset.detailImage);root.querySelectorAll('.detail-thumb').forEach(x=>x.classList.remove('active'));btn.classList.add('active');}));
   const sticky=document.querySelector('#fgMobileBuyBar'); if(sticky) sticky.remove();
-  if(hasStock(p)){ document.body.insertAdjacentHTML('beforeend',`<div id="fgMobileBuyBar" class="fg-mobile-buybar" aria-label="Quick purchase"><div><small>${escapeHtml(stockLabel(p.stock))}</small><strong>${money(price)}</strong></div><button type="button" class="btn btn-soft" data-add-product="${escapeHtml(p.id)}">Add</button><button type="button" class="btn btn-blue" data-buy-now="${escapeHtml(p.id)}">Buy Now</button></div>`); }
+  if(hasStock(p)){ document.body.insertAdjacentHTML('beforeend',`<div id="fgMobileBuyBar" class="fg-product-buybar" aria-label="Quick purchase"><div class="fg-buy-price"><strong>${money(price)}</strong><small class="fg-buy-stock">${escapeHtml(stockLabel(p.stock))}</small></div><button type="button" class="btn btn-soft" data-add-product="${escapeHtml(p.id)}">Add</button><button type="button" class="btn btn-blue" data-buy-now="${escapeHtml(p.id)}">Buy Now</button></div>`); }
   const recent=getRecentViewed().filter(x=>String(x.id)!==String(p.id)).slice(0,10);const rt=document.querySelector('#recentViewed');if(rt){rt.innerHTML=recent.length?recent.map((x,i)=>productCard(x,i)).join(''):'<div class="no-results">Products you open will appear here.</div>';rt._products=recent;setupRailSlider('#recentViewed','[data-recent-prev]','[data-recent-next]',4800);}
   setupSimilarProducts(p); window.scrollTo({top:0,behavior:'instant'});
 }
@@ -392,7 +394,7 @@ function writeCachedProducts(data){try{localStorage.setItem(CACHE_KEY,JSON.strin
 async function fetchProducts(){
   if(!CONFIG.productsApiUrl||CONFIG.productsApiUrl.includes("PASTE_"))return CONFIG.fallbackProducts;
   const controller=new AbortController(); const timer=setTimeout(()=>controller.abort(),10000);
-  try{const r=await fetch(CONFIG.productsApiUrl,{cache:"no-store",signal:controller.signal});if(!r.ok)throw Error('HTTP '+r.status);const raw=await r.json();const payload=normalizeApiPayload(raw);window.FG_PRODUCTS_LOAD_ERROR=null;writeCachedProducts(payload.products);if(payload.announcement){window.FG_ANNOUNCEMENT=payload.announcement;}return payload.products}catch(e){window.FG_PRODUCTS_LOAD_ERROR=e;return readCachedProducts()||CONFIG.fallbackProducts}finally{clearTimeout(timer)}
+  try{const r=await fetch(CONFIG.productsApiUrl,{cache:"default",signal:controller.signal});if(!r.ok)throw Error('HTTP '+r.status);const raw=await r.json();const payload=normalizeApiPayload(raw);window.FG_PRODUCTS_LOAD_ERROR=null;writeCachedProducts(payload.products);if(payload.announcement){window.FG_ANNOUNCEMENT=payload.announcement;}return payload.products}catch(e){window.FG_PRODUCTS_LOAD_ERROR=e;return readCachedProducts()||CONFIG.fallbackProducts}finally{clearTimeout(timer)}
 }
 async function loadProductsFast(onData,onDone){
   const cached=readCachedProducts();
@@ -663,7 +665,7 @@ function setupCatalog(products){
   s?.addEventListener('input',filter);c?.addEventListener('change',filter);sort?.addEventListener('change',filter);filter();
 }
 
-function setupPremiumMobileNav(){if(document.querySelector('#fgMobileNav'))return;const path=location.pathname.toLowerCase();const active=path.includes('products')||path.includes('product.html')?'shop':path.includes('contact')?'support':'home';document.body.insertAdjacentHTML('beforeend',`<nav id="fgMobileNav" class="fg-mobile-nav" aria-label="Mobile navigation"><a class="${active==='home'?'is-active':''}" href="index.html"><span><i class="fa-solid fa-house" aria-hidden="true"></i></span><small>Home</small></a><a class="${active==='shop'?'is-active':''}" href="products.html"><span><i class="fa-solid fa-layer-group" aria-hidden="true"></i></span><small>Categories</small></a><button type="button" data-mobile-search aria-label="Search"><span><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i></span><small>Search</small></button><button type="button" data-cart-open aria-label="Open cart"><span><i class="fa-solid fa-cart-shopping" aria-hidden="true"></i><b data-cart-count>0</b></span><small>Cart</small></button><a class="${active==='support'?'is-active':''}" href="contact.html"><span><i class="fa-solid fa-headset" aria-hidden="true"></i></span><small>Support</small></a></nav>`);document.querySelector('[data-mobile-search]')?.addEventListener('click',()=>{const input=document.querySelector('.search input');input?.focus();input?.scrollIntoView({behavior:'smooth',block:'center'});});}
+function setupPremiumMobileNav(){if(document.querySelector('#fgMobileNav'))return;const path=location.pathname.toLowerCase();const active=path.includes('products')||path.includes('product.html')?'shop':'home';document.body.insertAdjacentHTML('beforeend',`<nav id="fgMobileNav" class="fg-mobile-nav" aria-label="Mobile navigation"><a class="${active==='home'?'is-active':''}" href="index.html"><span><i class="fa-solid fa-house" aria-hidden="true"></i></span><small>Home</small></a><a class="${active==='shop'?'is-active':''}" href="products.html"><span><i class="fa-solid fa-layer-group" aria-hidden="true"></i></span><small>Categories</small></a><button type="button" data-mobile-search aria-label="Search"><span><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i></span><small>Search</small></button><button type="button" data-cart-open aria-label="Open cart"><span><i class="fa-solid fa-cart-shopping" aria-hidden="true"></i><b data-cart-count>0</b></span><small>Cart</small></button></nav>`);document.querySelector('[data-mobile-search]')?.addEventListener('click',()=>{const input=document.querySelector('.search input');input?.focus();input?.scrollIntoView({behavior:'smooth',block:'center'});});}
 
 async function loadPublicSettings(){try{const r=await fetch(CONFIG.productsApiUrl+'?action=settings',{cache:'no-store'});if(!r.ok)return;const j=await r.json();window.FG_SETTINGS=j.settings||{};if(window.FG_SETTINGS.whatsappNumber)CONFIG.whatsappNumber=String(window.FG_SETTINGS.whatsappNumber).replace(/^\+/,'');document.querySelectorAll('.wa-link').forEach(a=>{a.href=wa();a.target='_blank';a.rel='noopener'});const a=document.querySelector('#announcementText');if(a&&window.FG_SETTINGS.announcement)a.textContent=window.FG_SETTINGS.announcement;toggleTransactionField();document.querySelectorAll('[data-store-address]').forEach(e=>e.textContent=window.FG_SETTINGS.businessAddress||'Chattogram, Bangladesh');document.querySelectorAll('[data-store-hours]').forEach(e=>e.textContent=window.FG_SETTINGS.businessHours||'Contact us on WhatsApp for current support hours.');document.querySelectorAll('[data-store-phone]').forEach(e=>e.textContent=window.FG_SETTINGS.whatsappNumber||'');}catch{}}
 

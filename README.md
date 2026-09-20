@@ -1,25 +1,16 @@
-# FLASH GEAR BD — Clean Production Build
+# FLASH GEAR BD — Cloudflare Workers deployment
 
-## Website
-Cloudflare Pages/Workers serves only the `public/` directory. Do not change `assets.directory` away from `./public`.
+This package is structured for Cloudflare Workers + Static Assets.
 
-## Apps Script
-Upload `google-apps-script.gs` into the Apps Script project as `Code.gs`.
-Add `product-manager.html` as an **HTML file** in the same Apps Script project because the manager uses `google.script.run`.
+## Cloudflare Workers Builds
+- Root directory: `/`
+- Build command: `npx wrangler deploy`
+- Build output directory: leave blank
+- Deploy command: `npx wrangler deploy`
 
-Run `setupStore()` once after pasting the backend. On the first run it creates a new secure admin PIN and returns it in the execution result. Keep that PIN private. The old PIN should not be reused because it was previously exposed.
-
-Set the Apps Script project timezone to **Asia/Dhaka** in Project Settings.
-
-After deploying the Apps Script Web App, make sure `public/app.js` contains the current `/exec` URL.
-
-## Store Settings
-In the `Settings` sheet, fill these when available:
-- Store Email — receives new-order email alerts
-- bKash Number
-- Nagad Number
-- Business Address
-- Business Hours
+`wrangler.jsonc` intentionally points to `./public`, and this package contains that directory.
 
 ## Important
-The backend re-checks current prices and stock at checkout. It creates the official Order ID before WhatsApp opens. Transaction IDs for bKash/Nagad are recorded for manual checking; there is no automatic payment verification.
+Do not set the asset directory to `/opt/buildhome/repo/public` manually. Wrangler resolves `./public` from the project root.
+
+The public website files are inside `public/`.

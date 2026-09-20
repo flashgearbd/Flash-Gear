@@ -1,7 +1,9 @@
 {
-  "name": "flashgearbd",
-  "compatibility_date": "2026-09-17",
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "flash-gear",
+  "compatibility_date": "2026-09-20",
   "assets": {
-    "directory": "./public"
+    "directory": "./public",
+    "not_found_handling": "single-page-application"
   }
 }
