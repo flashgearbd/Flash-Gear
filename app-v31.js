@@ -147,7 +147,7 @@ function ensureCartDrawer(){
   document.body.insertAdjacentHTML('beforeend',`<div id="cartDrawer" class="cart-drawer" hidden>
     <div class="cart-backdrop" data-close-cart></div>
     <aside class="cart-panel" role="dialog" aria-modal="true" aria-labelledby="cartTitle">
-      <div class="cart-head"><div><span class="eyebrow">YOUR ORDER</span><h2 id="cartTitle">Cart</h2></div><button class="drawer-close" data-close-cart aria-label="Close cart">×</button></div>
+      <div class="cart-head"><div><span class="eyebrow">YOUR ORDER</span><h2 id="cartTitle">Cart</h2><a class="cart-track-link" href="tracking.html"><i class="fa-solid fa-truck-fast" aria-hidden="true"></i> Track Order</a></div><button class="drawer-close" data-close-cart aria-label="Close cart">×</button></div>
       <div id="cartBody" class="cart-body"></div>
       <div class="cart-checkout-form">
         <div class="checkout-section-title">Customer information</div>
@@ -172,9 +172,8 @@ function ensureCartDrawer(){
 }
 function showOrderSuccess(result){
   let el=document.querySelector('#fgOrderSuccess');
-  if(!el){document.body.insertAdjacentHTML('beforeend',`<div id="fgOrderSuccess" class="fg-order-success" role="status" aria-live="polite"><div class="fg-order-success-card"><div class="fg-success-icon">✓</div><span class="eyebrow">FLASH GEAR BD</span><h2>Order Confirmed</h2><p>Your order has been saved successfully.</p><strong class="fg-order-id"></strong><strong class="fg-customer-order"></strong><span class="fg-order-total"></span><div class="fg-success-actions"><a class="btn btn-blue" href="tracking.html">Track Order</a><a class="btn btn-soft" href="products.html">Continue Shopping</a></div><small>Save both your Order ID and Customer Order Number to track delivery.</small></div></div>`);el=document.querySelector('#fgOrderSuccess');}
+  if(!el){document.body.insertAdjacentHTML('beforeend',`<div id="fgOrderSuccess" class="fg-order-success" role="status" aria-live="polite"><div class="fg-order-success-card"><div class="fg-success-icon">✓</div><span class="eyebrow">FLASH GEAR BD</span><h2>Order Confirmed</h2><p>Your order has been saved successfully.</p><strong class="fg-order-id"></strong><span class="fg-order-total"></span><span class="fg-order-phone-note">Use your order phone number to track delivery.</span><div class="fg-success-actions"><a class="btn btn-blue" href="tracking.html">Track Order</a><a class="btn btn-soft" href="products.html">Continue Shopping</a></div><small>Save your Order ID and the phone number used for the order to track delivery.</small></div></div>`);el=document.querySelector('#fgOrderSuccess');}
   el.querySelector('.fg-order-id').textContent='Order ID: '+(result?.orderId||'Confirmed');
-  el.querySelector('.fg-customer-order').textContent='Customer Order Number: '+(result?.customerOrderNumber||'—');
   el.querySelector('.fg-order-total').textContent='Total: '+money(result?.total||0);
   el.hidden=false; requestAnimationFrame(()=>el.classList.add('show'));
   return el;
@@ -632,21 +631,17 @@ async function setupTrackingPage(){
   const form=document.querySelector('#trackingForm'); if(!form)return;
   const result=document.querySelector('#trackingResult'),btn=form.querySelector('button[type="submit"]');
   const render=(data)=>{
-    if(!data?.success)throw new Error(data?.error||'Order not found. Check both numbers.');
-    const status=String(data.status||'Pending');
-    const history=Array.isArray(data.history)?data.history:[];
-    result.innerHTML=`<div class="tracking-current"><span class="eyebrow">CURRENT STATUS</span><h2>${escapeHtml(status)}</h2><p>Order ID: <b>${escapeHtml(data.orderId||'')}</b><br>Customer Order Number: <b>${escapeHtml(data.customerOrderNumber||'')}</b><br>Total: <b>${money(data.total||0)}</b></p></div><div class="tracking-timeline">${history.map((h,i)=>`<div class="tracking-event ${i===history.length-1?'is-current':''}"><span class="tracking-dot"></span><div><strong>${escapeHtml(h.status||'')}</strong><small>${escapeHtml(h.updatedAt||'')}</small>${h.note?`<p>${escapeHtml(h.note)}</p>`:''}</div></div>`).join('')}</div>`;
+    if(!data?.success)throw new Error(data?.error||'Order not found. Check your Order ID or phone number.');
+    const status=String(data.status||'Pending'),history=Array.isArray(data.history)?data.history:[];
+    result.innerHTML=`<div class="tracking-current"><span class="eyebrow">CURRENT STATUS</span><h2>${escapeHtml(status)}</h2><p>Order ID: <b>${escapeHtml(data.orderId||'')}</b><br>Phone: <b>${escapeHtml(data.phone||'')}</b><br>Total: <b>${money(data.total||0)}</b></p></div><div class="tracking-timeline">${history.map((h,i)=>`<div class="tracking-event ${i===history.length-1?'is-current':''}"><span class="tracking-dot"></span><div><strong>${escapeHtml(h.status||'')}</strong><small>${escapeHtml(h.updatedAt||'')}</small>${h.note?`<p>${escapeHtml(h.note)}</p>`:''}</div></div>`).join('')}</div>`;
     result.hidden=false;
   };
   form.addEventListener('submit',async e=>{
-    e.preventDefault();
-    const orderId=form.querySelector('[name="orderId"]').value.trim(),customerOrderNumber=form.querySelector('[name="customerOrderNumber"]').value.trim();
-    if(!orderId||!customerOrderNumber){result.hidden=false;result.innerHTML='<div class="tracking-error">Enter both Order ID and Customer Order Number.</div>';return;}
+    e.preventDefault(); const lookup=form.querySelector('[name="lookup"]').value.trim();
+    if(!lookup){result.hidden=false;result.innerHTML='<div class="tracking-error">Enter your Order ID or phone number.</div>';return;}
     btn.disabled=true;btn.textContent='Checking…';
-    try{
-      const url=new URL(CONFIG.productsApiUrl);url.searchParams.set('action','track');url.searchParams.set('orderId',orderId);url.searchParams.set('customerOrderNumber',customerOrderNumber);
-      const r=await fetch(url.toString(),{cache:'no-store'});const data=await r.json();if(!r.ok||!data?.success)throw new Error(data?.error||'Order not found.');render(data);
-    }catch(err){result.hidden=false;result.innerHTML=`<div class="tracking-error">${escapeHtml(err?.message||'Could not check the order.')}</div>`;}
+    try{const url=new URL(CONFIG.productsApiUrl);url.searchParams.set('action','track');url.searchParams.set('lookup',lookup);const r=await fetch(url.toString(),{cache:'no-store'});const data=await r.json();if(!r.ok||!data?.success)throw new Error(data?.error||'Order not found.');render(data);}
+    catch(err){result.hidden=false;result.innerHTML=`<div class="tracking-error">${escapeHtml(err?.message||'Could not check the order.')}</div>`;}
     finally{btn.disabled=false;btn.textContent='Track Order';}
   });
 }

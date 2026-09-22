@@ -1,24 +1,22 @@
-# FLASH GEAR BD V27 — V7.1 Search Reference + Premium UI Polish
+# FLASH GEAR BD — V33 Order Tracking + Order Manager
 
-This build starts from the supplied V25 storefront and uses the supplied V7.1 storefront as the visual reference for the top search bar.
+## Changes in V33
+- Cart drawer includes a **Track Order** option.
+- Mobile bottom dock automatically hides while the cart drawer is open and returns after the cart closes.
+- Customer tracking now uses **Order ID OR the phone number used for the order**. Customer Order Number has been removed.
+- Order confirmation shows only the Order ID and phone-based tracking instruction.
+- Added a dedicated **Order Manager** Apps Script HTML app (`backend/order-manager.html`).
+- Order Manager shows every order, recent/pending/status counts, search/filter, tracking timeline, and status controls.
+- Manager can move orders through Pending → Confirmed → Processing → Shipped → Out for Delivery → Delivered/Cancelled and add customer-facing tracking notes.
+- Existing Orders sheet is migrated to remove the Customer Order Number column.
+- Existing Order Tracking sheet is migrated to remove the Customer Order Number column.
+- Existing product descriptions remain in **Product Descriptions** and are managed through Product Manager.
 
-## Scope of changes
-- Recreated the V7.1-style full pill search bar.
-- Premium focus/press/hover motion for the search bar and search suggestions.
-- Smooth, restrained UI motion for non-cart visible controls/cards.
-- Mobile search remains a full-width pill beneath the brand row.
-- Native GET search flow remains unchanged: `products.html?q=...`.
-- Cart markup, cart state, cart drawer, checkout and cart JavaScript were not modified.
-- Apps Script backend was not modified.
+## Apps Script deployment
+Add/replace:
+- `google-apps-script.gs`
+- `product-manager.html`
+- `order-manager.html`
 
-## Verification
-- JavaScript syntax checked.
-- CSS braces/comments balanced.
-- All HTML asset references updated to `app-v27.js` and `style-v27.css`.
-- Backend files compared byte-for-byte with the supplied V25 package.
-- Frontend JavaScript compared byte-for-byte with the supplied V25 package.
-- HTML content compared byte-for-byte with V25 except for the intentional V27 asset filename changes.
-- Final ZIP contents inspected after creation.
-
-
-V30 changes: exact search suggestions (max 5, no unrelated fallback matches), New Arrivals capped at 6, Hot Deals capped at 10, Featured capped at 5, and all three rails advance one card then wait 2.5 seconds before the next card, looping indefinitely.
+After deploying the Apps Script web app, the Order Manager is available with the same web-app URL plus `?orders=1`.
+The existing Product Manager remains available with `?admin=1`.
