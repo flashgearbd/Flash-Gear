@@ -172,8 +172,9 @@ function ensureCartDrawer(){
 }
 function showOrderSuccess(result){
   let el=document.querySelector('#fgOrderSuccess');
-  if(!el){document.body.insertAdjacentHTML('beforeend',`<div id="fgOrderSuccess" class="fg-order-success" role="status" aria-live="polite"><div class="fg-order-success-card"><div class="fg-success-icon">✓</div><span class="eyebrow">FLASH GEAR BD</span><h2>Order Confirmed</h2><p>Your order has been saved successfully.</p><strong class="fg-order-id"></strong><span class="fg-order-total"></span><div class="fg-success-actions"><a class="btn btn-blue" href="products.html">Continue Shopping</a></div><small>Your order has been saved successfully.</small></div></div>`);el=document.querySelector('#fgOrderSuccess');}
+  if(!el){document.body.insertAdjacentHTML('beforeend',`<div id="fgOrderSuccess" class="fg-order-success" role="status" aria-live="polite"><div class="fg-order-success-card"><div class="fg-success-icon">✓</div><span class="eyebrow">FLASH GEAR BD</span><h2>Order Confirmed</h2><p>Your order has been saved successfully.</p><strong class="fg-order-id"></strong><strong class="fg-customer-order"></strong><span class="fg-order-total"></span><div class="fg-success-actions"><a class="btn btn-blue" href="tracking.html">Track Order</a><a class="btn btn-soft" href="products.html">Continue Shopping</a></div><small>Save both your Order ID and Customer Order Number to track delivery.</small></div></div>`);el=document.querySelector('#fgOrderSuccess');}
   el.querySelector('.fg-order-id').textContent='Order ID: '+(result?.orderId||'Confirmed');
+  el.querySelector('.fg-customer-order').textContent='Customer Order Number: '+(result?.customerOrderNumber||'—');
   el.querySelector('.fg-order-total').textContent='Total: '+money(result?.total||0);
   el.hidden=false; requestAnimationFrame(()=>el.classList.add('show'));
   return el;
@@ -626,6 +627,30 @@ function setupCatalog(products){
 
 function setupPremiumMobileNav(){if(document.querySelector('#fgMobileNav'))return;const path=location.pathname.toLowerCase();const active=path.includes('products')||path.includes('product.html')?'shop':'home';document.body.insertAdjacentHTML('beforeend',`<nav id="fgMobileNav" class="fg-mobile-nav" aria-label="Mobile navigation"><a class="${active==='home'?'is-active':''}" href="index.html"><span><i class="fa-solid fa-house" aria-hidden="true"></i></span><small>Home</small></a><a class="${active==='shop'?'is-active':''}" href="products.html"><span><i class="fa-solid fa-layer-group" aria-hidden="true"></i></span><small>Categories</small></a><button type="button" data-cart-open aria-label="Open cart"><span><i class="fa-solid fa-cart-shopping" aria-hidden="true"></i><b data-cart-count>0</b></span><small>Cart</small></button></nav>`);}
 
+
+async function setupTrackingPage(){
+  const form=document.querySelector('#trackingForm'); if(!form)return;
+  const result=document.querySelector('#trackingResult'),btn=form.querySelector('button[type="submit"]');
+  const render=(data)=>{
+    if(!data?.success)throw new Error(data?.error||'Order not found. Check both numbers.');
+    const status=String(data.status||'Pending');
+    const history=Array.isArray(data.history)?data.history:[];
+    result.innerHTML=`<div class="tracking-current"><span class="eyebrow">CURRENT STATUS</span><h2>${escapeHtml(status)}</h2><p>Order ID: <b>${escapeHtml(data.orderId||'')}</b><br>Customer Order Number: <b>${escapeHtml(data.customerOrderNumber||'')}</b><br>Total: <b>${money(data.total||0)}</b></p></div><div class="tracking-timeline">${history.map((h,i)=>`<div class="tracking-event ${i===history.length-1?'is-current':''}"><span class="tracking-dot"></span><div><strong>${escapeHtml(h.status||'')}</strong><small>${escapeHtml(h.updatedAt||'')}</small>${h.note?`<p>${escapeHtml(h.note)}</p>`:''}</div></div>`).join('')}</div>`;
+    result.hidden=false;
+  };
+  form.addEventListener('submit',async e=>{
+    e.preventDefault();
+    const orderId=form.querySelector('[name="orderId"]').value.trim(),customerOrderNumber=form.querySelector('[name="customerOrderNumber"]').value.trim();
+    if(!orderId||!customerOrderNumber){result.hidden=false;result.innerHTML='<div class="tracking-error">Enter both Order ID and Customer Order Number.</div>';return;}
+    btn.disabled=true;btn.textContent='Checking…';
+    try{
+      const url=new URL(CONFIG.productsApiUrl);url.searchParams.set('action','track');url.searchParams.set('orderId',orderId);url.searchParams.set('customerOrderNumber',customerOrderNumber);
+      const r=await fetch(url.toString(),{cache:'no-store'});const data=await r.json();if(!r.ok||!data?.success)throw new Error(data?.error||'Order not found.');render(data);
+    }catch(err){result.hidden=false;result.innerHTML=`<div class="tracking-error">${escapeHtml(err?.message||'Could not check the order.')}</div>`;}
+    finally{btn.disabled=false;btn.textContent='Track Order';}
+  });
+}
+
 async function loadPublicSettings(){try{const r=await fetch(CONFIG.productsApiUrl+'?action=settings',{cache:'no-store'});if(!r.ok)return;const j=await r.json();window.FG_SETTINGS=j.settings||{};if(window.FG_SETTINGS.whatsappNumber)CONFIG.whatsappNumber=String(window.FG_SETTINGS.whatsappNumber).replace(/^\+/,'');document.querySelectorAll('.wa-link').forEach(a=>{a.href=wa();a.target='_blank';a.rel='noopener'});const a=document.querySelector('#announcementText');if(a&&window.FG_SETTINGS.announcement)a.textContent=window.FG_SETTINGS.announcement;toggleTransactionField();document.querySelectorAll('[data-store-address]').forEach(e=>e.textContent=window.FG_SETTINGS.businessAddress||'Chattogram, Bangladesh');document.querySelectorAll('[data-store-hours]').forEach(e=>e.textContent=window.FG_SETTINGS.businessHours||'Contact us on WhatsApp for current support hours.');document.querySelectorAll('[data-store-phone]').forEach(e=>e.textContent=window.FG_SETTINGS.whatsappNumber||'');}catch{}}
 
 document.addEventListener("DOMContentLoaded",async()=>{
@@ -633,7 +658,7 @@ document.addEventListener("DOMContentLoaded",async()=>{
   setupHeaderSearch();
   document.querySelectorAll(".wa-link").forEach(a=>{a.href=wa();a.target="_blank";a.rel="noopener"});
   document.querySelectorAll("[data-facebook]").forEach(a=>a.href=CONFIG.facebook);document.querySelectorAll("[data-instagram]").forEach(a=>a.href=CONFIG.instagram);document.querySelectorAll("#year").forEach(e=>e.textContent=new Date().getFullYear());
-  ensureCartDrawer();updateCartUI(); setupSidebar(); setupAnnouncement(); setActiveNav(); loadAnnouncement(); loadPublicSettings();
+  ensureCartDrawer();updateCartUI(); setupTrackingPage(); setupSidebar(); setupAnnouncement(); setActiveNav(); loadAnnouncement(); loadPublicSettings();
   const earlyParams=new URLSearchParams(location.search);
   if(document.querySelector('#productDetail')){try{const fastRaw=sessionStorage.getItem('fg_open_product')||localStorage.getItem('fg_open_product_fast')||'';const cachedProduct=JSON.parse(fastRaw||'null');if(cachedProduct&&String(cachedProduct.id)===String(earlyParams.get('id')))renderProductPage(cachedProduct)}catch{}}
   let currentProducts=[];

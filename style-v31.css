@@ -2039,3 +2039,29 @@ body.has-product-buybar{padding-bottom:82px}
   .fg-search-suggestions{top:calc(100% + 7px)!important;left:0!important;right:0!important;border-radius:20px!important;padding:6px!important;box-shadow:0 20px 48px rgba(8,50,80,.20)!important;}
   .fg-search-suggestions .fg-search-item{min-height:60px!important;padding:9px 10px!important;}
 }
+
+/* ===== ORDER TRACKING ===== */
+.tracking-shell{max-width:760px;margin:0 auto;padding:34px 0 80px}
+.tracking-card{background:#fff;border:1px solid #dceaf3;border-radius:26px;padding:24px;box-shadow:0 16px 45px rgba(7,35,58,.08)}
+.tracking-form{display:grid;gap:12px}
+.tracking-form label{font-size:11px;font-weight:900;color:#49687c}
+.tracking-form input{height:50px;border:1px solid #cfe0ee;border-radius:16px;padding:0 15px;font-size:16px;background:#fbfdff}
+.tracking-form button{min-height:50px}
+.tracking-result{margin-top:16px}
+.tracking-current{padding:18px;border-radius:20px;background:linear-gradient(135deg,#eaf7ff,#fff);border:1px solid #cfe8f7}
+.tracking-current h2{margin:5px 0 8px;font:800 26px Sora,Inter,sans-serif;color:#087fdf}
+.tracking-current p{margin:0;color:#61788a;line-height:1.65}
+.tracking-timeline{position:relative;margin-top:18px;padding-left:22px}
+.tracking-timeline:before{content:"";position:absolute;left:6px;top:8px;bottom:8px;width:2px;background:#d8e9f3}
+.tracking-event{position:relative;display:grid;grid-template-columns:1fr;gap:3px;padding:0 0 20px 16px}
+.tracking-dot{position:absolute;left:-1px;top:3px;width:14px;height:14px;border-radius:50%;background:#b7cad7;border:3px solid #fff;box-shadow:0 0 0 1px #cfe0ea}
+.tracking-event.is-current .tracking-dot{background:#08a9e0;box-shadow:0 0 0 4px #e5f8ff}
+.tracking-event strong{font-size:14px;color:#18364f}
+.tracking-event small{color:#758a99;font-size:10px}
+.tracking-event p{margin:4px 0 0;color:#607789;font-size:12px;line-height:1.5}
+.tracking-error{padding:14px;border-radius:15px;background:#fff0f2;border:1px solid #f1c0c9;color:#c3314b;font-weight:800;font-size:12px}
+.fg-customer-order{display:block;margin:5px 0;color:#087fdf;font-size:13px}
+@media(max-width:700px){.tracking-shell{padding:20px 0 50px}.tracking-card{padding:16px;border-radius:20px}.tracking-current h2{font-size:22px}}
+
+/* Keep the floating WhatsApp button out of the cart/checkout UI. */
+body.drawer-open .fg-wa-float{display:none!important;}
