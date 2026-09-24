@@ -1,7 +1,7 @@
 
 /* V13 architecture: configuration → data/cache → cart/checkout → rendering → page setup. */
 const CONFIG = {
-  productsApiUrl: "https://script.google.com/macros/s/AKfycbziRYes9_oZDi3uTAC09R8xo6OVRBq9RRxABkgcnmCW24rWyj5AocJQko_OBofvjaMI/exec",
+  productsApiUrl: "https://script.google.com/macros/s/AKfycbxmPBbQROUhe3ZzKlWpNqsL-6jZpV0De51U7NMkiFOpfVz21YDJL2ywrEz4MaDbks_KXg/exec",
   whatsappNumber: "8801601093553",
   facebook: "https://www.facebook.com/share/1HyzxwuCR8/",
   instagram: "https://www.instagram.com/flashgearbd/",
