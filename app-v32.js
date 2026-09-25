@@ -200,91 +200,26 @@ function openProductPage(p){
 
 
 function setupProductRail(trackSelector, prevSelector, nextSelector, interval=2500){
-  const track=document.querySelector(trackSelector);
-  const viewport=track?.parentElement;
-  if(!track||!viewport)return;
+  const track=document.querySelector(trackSelector), viewport=track?.parentElement; if(!track||!viewport)return;
   if(track._productRailCleanup){track._productRailCleanup();track._productRailCleanup=null;}
-
-  const originals=Array.from(track.children).filter(el=>el.classList.contains('product-card'));
-  if(!originals.length)return;
-  const count=originals.length;
-  const source=originals.map(el=>el.cloneNode(true));
-
-  track.replaceChildren();
+  const originals=Array.from(track.children).filter(el=>el.classList.contains('product-card')); if(!originals.length)return;
+  const count=originals.length, source=originals.map(el=>el.cloneNode(true)); track.replaceChildren();
   const appendSet=()=>source.forEach(el=>track.appendChild(el.cloneNode(true)));
-  if(count<2) appendSet();
-  else { appendSet(); appendSet(); appendSet(); }
-
-  let timer=null, resizeTimer=null, fallbackTimer=null;
+  if(count<2)appendSet(); else {appendSet();appendSet();appendSet();}
+  let timer=null,resizeTimer=null,movementTimer=null;
   const reduced=!!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-  const stepWidth=()=>{
-    const card=track.querySelector('.product-card');
-    if(!card)return 0;
-    const gap=parseFloat(getComputedStyle(track).gap)||0;
-    return card.getBoundingClientRect().width+gap;
-  };
+  const stepWidth=()=>{const card=track.querySelector('.product-card');if(!card)return 0;return card.getBoundingClientRect().width+(parseFloat(getComputedStyle(track).gap)||0);};
   const setWidth=()=>stepWidth()*count;
-  const normalize=()=>{
-    if(count<2)return;
-    const w=setWidth();
-    if(!w)return;
-    const x=viewport.scrollLeft;
-    let y=x;
-    while(y < w*0.5) y += w;
-    while(y >= w*2.5) y -= w;
-    if(Math.abs(y-x)>0.5) viewport.scrollLeft=y;
-  };
-  const stop=()=>{
-    if(timer){clearTimeout(timer);timer=null;}
-    if(fallbackTimer){clearTimeout(fallbackTimer);fallbackTimer=null;}
-  };
-  const schedule=()=>{
-    stop();
-    if(reduced||document.hidden||count<2)return;
-    timer=setTimeout(()=>{
-      timer=null;
-      const w=stepWidth();
-      if(!w){schedule();return;}
-      if(reduced){viewport.scrollBy({left:w,behavior:'auto'});schedule();return;}
-      viewport.scrollBy({left:w,behavior:'smooth'});
-      // Chrome/Android fires scrollend after the one-card movement. The
-      // fallback keeps the loop alive on browsers without scrollend.
-      fallbackTimer=setTimeout(()=>{fallbackTimer=null;schedule();},700);
-    },Math.max(0,interval));
-  };
-  const move=dir=>{
-    const w=stepWidth();
-    if(!w)return;
-    stop();
-    viewport.scrollBy({left:dir*w,behavior:reduced?'auto':'smooth'});
-    if(reduced){schedule();return;}
-    fallbackTimer=setTimeout(()=>{fallbackTimer=null;schedule();},700);
-  };
-  const prev=document.querySelector(prevSelector), next=document.querySelector(nextSelector);
-  prev?.addEventListener('click',()=>move(-1));
-  next?.addEventListener('click',()=>move(1));
-  const onScroll=()=>normalize();
-  const onScrollEnd=()=>{if(fallbackTimer){clearTimeout(fallbackTimer);fallbackTimer=null;}schedule();};
-  const onVisibility=()=>document.hidden?stop():schedule();
-  const onResize=()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(normalize,120);};
-  viewport.addEventListener('scroll',onScroll,{passive:true});
-  viewport.addEventListener('scrollend',onScrollEnd,{passive:true});
-  document.addEventListener('visibilitychange',onVisibility);
-  window.addEventListener('resize',onResize,{passive:true});
-  requestAnimationFrame(()=>requestAnimationFrame(()=>{
-    const w=setWidth();
-    viewport.scrollLeft=(count>=2&&w)?w:0;
-    schedule();
-  }));
-  track._productRailCleanup=()=>{
-    stop();clearTimeout(resizeTimer);
-    prev?.replaceWith(prev.cloneNode(true));
-    next?.replaceWith(next.cloneNode(true));
-    viewport.removeEventListener('scroll',onScroll);
-    viewport.removeEventListener('scrollend',onScrollEnd);
-    document.removeEventListener('visibilitychange',onVisibility);
-    window.removeEventListener('resize',onResize);
-  };
+  const normalize=()=>{if(count<2)return;const w=setWidth();if(!w)return;const x=viewport.scrollLeft;let y=x;while(y<w*.5)y+=w;while(y>=w*2.5)y-=w;if(Math.abs(y-x)>.5)viewport.scrollLeft=y;};
+  const stop=()=>{if(timer){clearTimeout(timer);timer=null;}if(movementTimer){clearTimeout(movementTimer);movementTimer=null;}};
+  const schedule=()=>{stop();if(reduced||document.hidden||count<2)return;timer=setTimeout(()=>{timer=null;const w=stepWidth();if(!w){schedule();return;}viewport.scrollBy({left:w,behavior:'smooth'});movementTimer=setTimeout(()=>{movementTimer=null;normalize();schedule();},650);},Math.max(0,interval));};
+  const move=dir=>{const w=stepWidth();if(!w)return;stop();viewport.scrollBy({left:dir*w,behavior:reduced?'auto':'smooth'});movementTimer=setTimeout(()=>{movementTimer=null;normalize();schedule();},650);};
+  const prev=document.querySelector(prevSelector),next=document.querySelector(nextSelector);prev?.addEventListener('click',()=>move(-1));next?.addEventListener('click',()=>move(1));
+  const onScroll=()=>normalize(); const onScrollEnd=()=>{if(movementTimer){clearTimeout(movementTimer);movementTimer=null;}normalize();schedule();};
+  const onVisibility=()=>document.hidden?stop():schedule(); const onResize=()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(normalize,120);};
+  viewport.addEventListener('scroll',onScroll,{passive:true});viewport.addEventListener('scrollend',onScrollEnd,{passive:true});document.addEventListener('visibilitychange',onVisibility);window.addEventListener('resize',onResize,{passive:true});
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{const w=setWidth();viewport.scrollLeft=(count>=2&&w)?w:0;schedule();}));
+  track._productRailCleanup=()=>{stop();clearTimeout(resizeTimer);prev?.replaceWith(prev.cloneNode(true));next?.replaceWith(next.cloneNode(true));viewport.removeEventListener('scroll',onScroll);viewport.removeEventListener('scrollend',onScrollEnd);document.removeEventListener('visibilitychange',onVisibility);window.removeEventListener('resize',onResize);};
 }
 
 function renderHomeRows(products=[]){const valid=Array.isArray(products)?products.filter(p=>p&&p.name):[];const newest=valid.slice().reverse().slice(0,6);const hot=valid.slice().sort((a,b)=>{const da=Number(a.mrp||0)>Number(a.price||0)?1-Number(a.price||0)/Number(a.mrp||1):0;const db=Number(b.mrp||0)>Number(b.price||0)?1-Number(b.price||0)/Number(b.mrp||1):0;return db-da}).slice(0,10);for(const [id,list] of [['#newArrivals',newest],['#hotDeals',hot]]){const el=document.querySelector(id);if(el){el._products=list;el.innerHTML=list.length?list.map((x,i)=>productCard(x,i)).join(''):'<div class="no-results">No products available yet.</div>';}}setupProductRail('#newArrivals','[data-new-prev]','[data-new-next]',2500);setupProductRail('#hotDeals','[data-hot-prev]','[data-hot-next]',2500)}
@@ -415,62 +350,46 @@ function closeSearchSuggestions(except=null){
 }
 
 function normalizeSearchText(v){
-  return String(v??'').toLowerCase().replace(/[‐‑‒–—]/g,'-').replace(/[^a-z0-9]+/g,' ').trim();
+  return String(v??'').toLowerCase().replace(/[‐‑‒–—]/g,'-').replace(/[^a-z0-9]+/g,' ').replace(/\s+/g,' ').trim();
 }
+// Grammar-based live search: only name, brand and category participate.
+// Each typed word must match the beginning of a real searchable word.
+// A compact phrase such as "power bank" may match the real word "powerbank".
+function searchGrammarTokens(q){return normalizeSearchText(q).split(' ').filter(Boolean);}
+function searchableProductTokens(p){return searchGrammarTokens([p?.name,p?.brand,p?.category].join(' '));}
 function parseCapacityQuery(q){
-  const raw=normalizeSearchText(q).replace(/\s+/g,' ');
-  const compact=raw.replace(/\s+/g,'');
-  let m=compact.match(/(\d+(?:\.\d+)?)(k|mah)*/i);
-  if(!m)return null;
-  const n=Number(m[1]);
-  if(!Number.isFinite(n)||n<=0)return null;
-  let mah;
-  if(compact.endsWith('mah')) mah=n;
-  else if(compact.endsWith('k') || (n<=100 && (raw.includes('powerbank')||raw.includes('power bank')||raw.includes('battery')))) mah=n*1000;
-  else if(n>=1000) mah=n;
-  else return null;
-  return Math.round(mah);
+  const raw=normalizeSearchText(q).replace(/\s+/g,'');
+  const m=raw.match(/^(\d+(?:\.\d+)?)(k|mah)$/i); if(!m)return null;
+  const n=Number(m[1]); if(!Number.isFinite(n)||n<=0)return null;
+  return m[2].toLowerCase()==='k'?Math.round(n*1000):Math.round(n);
 }
-function productSearchHaystack(p){
-  return normalizeSearchText([p?.name,p?.brand,p?.category,p?.description,p?.color,p?.warranty].join(' '));
+function extractCapacityQuery(q){
+  for(const token of searchGrammarTokens(q)){const mah=parseCapacityQuery(token);if(mah)return mah;if(/^\d{4,6}$/.test(token))return Number(token);}
+  return null;
 }
+function productSearchHaystack(p){return normalizeSearchText([p?.name,p?.brand,p?.category].join(' '));}
 function productCapacityMatches(p,mah){
-  if(!mah)return false;
-  const hay=productSearchHaystack(p).replace(/\s+/g,'');
-  const k=mah/1000;
-  const variants=[String(mah),String(mah).replace(/(\d)(\d{3})$/,'$1,$2'),`${k}k`,`${k}mah`,`${k}000mah`];
-  return variants.some(v=>hay.includes(v.replace(/,/g,''))||hay.includes(v));
+  if(!mah)return false; const hay=productSearchHaystack(p).replace(/\s+/g,''); const k=mah/1000;
+  return [String(mah),`${k}k`,`${k}mah`,`${k}000mah`].some(v=>hay.includes(v));
+}
+function productMatchesSearchGrammar(p,q){
+  const tokens=searchGrammarTokens(q); if(!tokens.length)return false;
+  const searchable=searchableProductTokens(p); if(!searchable.length)return false;
+  const capacity=extractCapacityQuery(q);
+  const textTokens=capacity ? tokens.filter(t=>parseCapacityQuery(t)||/^\d{4,6}$/.test(t)?false:true) : tokens;
+  if(!textTokens.length)return true;
+  const compact=textTokens.join('');
+  // "power bank" is one semantic phrase and may match "powerbank".
+  if(compact && searchable.some(token=>token.startsWith(compact)))return true;
+  return textTokens.every(term=>searchable.some(token=>token.startsWith(term)));
 }
 function searchProductSuggestions(products,q,limit=5){
-  const query=normalizeSearchText(q);
-  if(!query)return [];
+  const query=normalizeSearchText(q); if(!query)return [];
   const all=Array.isArray(products)?products.filter(p=>p&&p.name):[];
-  const capacity=parseCapacityQuery(q);
-  const terms=query.split(/\s+/).filter(Boolean);
-  const compactQuery=query.replace(/\s+/g,'');
-  const matches=all.filter(p=>{
-    const hay=productSearchHaystack(p);
-    const compactHay=hay.replace(/\s+/g,'');
-    // Every typed term must actually match searchable product data. This
-    // prevents unrelated products from appearing merely because they have
-    // stock/featured points or a weak fuzzy score.
-    const termsMatch=terms.every(t=>hay.includes(t));
-    const phraseMatch=compactQuery.length>0&&compactHay.includes(compactQuery);
-    if(!termsMatch&&!phraseMatch)return false;
-    if(capacity&&!productCapacityMatches(p,capacity))return false;
-    return true;
-  });
-  return matches
-    .sort((a,b)=>{
-      const an=normalizeSearchText(a.name), bn=normalizeSearchText(b.name);
-      const ab=normalizeSearchText(a.brand), bb=normalizeSearchText(b.brand);
-      const aExact=an===query?1:0, bExact=bn===query?1:0;
-      const aBrand=ab===query?1:0, bBrand=bb===query?1:0;
-      const aStart=an.startsWith(query)||ab.startsWith(query)?1:0;
-      const bStart=bn.startsWith(query)||bb.startsWith(query)?1:0;
-      return bExact-aExact || bBrand-aBrand || bStart-aStart || an.localeCompare(bn);
-    })
-    .slice(0,Math.min(5,Math.max(1,Number(limit)||5)));
+  const capacity=extractCapacityQuery(q);
+  return all.filter(p=>productMatchesSearchGrammar(p,q) && (!capacity||productCapacityMatches(p,capacity)))
+    .sort((a,b)=>{const an=normalizeSearchText(a.name),bn=normalizeSearchText(b.name),ab=normalizeSearchText(a.brand),bb=normalizeSearchText(b.brand);const ae=an===query?1:0,be=bn===query?1:0,abr=ab===query?1:0,bbr=bb===query?1:0,as=an.startsWith(query)||ab.startsWith(query)?1:0,bs=bn.startsWith(query)||bb.startsWith(query)?1:0;return be-ae||bbr-abr||bs-as||an.localeCompare(bn);})
+    .slice(0,5);
 }
 
 function setupHeaderSearchNavigation(){
